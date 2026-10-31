@@ -1,12 +1,32 @@
 #!/bin/bash
 # Builds the SDK's cross toolchain (binutils, GCC for C and C++, newlib) for 32-bit PowerPC. Run on Linux:
-# Debian, on its own or in WSL.
+# Debian/WSL, or MSYS2 UCRT64 on Windows (experimental).
 set -euo pipefail
 
 TARGET=powerpc-xsdk-elf
-PREFIX="${PREFIX:-$HOME/xsdk-gcc}"
-WORK="${WORK:-$HOME/xsdk-gcc-work}"
+HOST_OPTIONS=()
+BUILD_OPTIONS=()
+GCC_HOST_OPTIONS=()
+if [[ "${MSYSTEM:-}" == UCRT64 ]]; then
+	HOST_OPTIONS=(--build=x86_64-w64-mingw32 --host=x86_64-w64-mingw32)
+	BUILD_OPTIONS=(--build=x86_64-w64-mingw32)
+	GCC_HOST_OPTIONS=(--with-gmp=/ucrt64 --with-mpfr=/ucrt64 --with-mpc=/ucrt64)
+	PREFIX="${PREFIX:-$HOME/xsdk-gcc-windows}"
+	WORK="${WORK:-$HOME/xsdk-gcc-work-windows}"
+	export CC=gcc CXX=g++ LDFLAGS="-static"
+	if [[ "$PREFIX" == *" "* || "$WORK" == *" "* ]]; then
+		echo "Use Windows build/install paths without spaces" >&2
+		exit 1
+	fi
+elif [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* ]]; then
+	echo "Open the MSYS2 UCRT64 environment, not MSYS/MINGW32" >&2
+	exit 1
+else
+	PREFIX="${PREFIX:-$HOME/xsdk-gcc}"
+	WORK="${WORK:-$HOME/xsdk-gcc-work}"
+fi
 JOBS="${JOBS:-$(nproc)}"
+[[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || { echo "Invalid JOBS" >&2; exit 1; }
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 BINUTILS=binutils-2.47
@@ -38,9 +58,14 @@ SPECS=(
 
 COMMON=(--target="$TARGET" --prefix="$PREFIX" --disable-nls --disable-multilib)
 # Constructors go in .init_array, which start.c runs; a cross GCC otherwise falls back to .ctors.
-GCC_COMMON=("${COMMON[@]}" --with-cpu=cell --with-newlib --disable-shared --disable-tls --with-specs="${SPECS[*]}"
+GCC_COMMON=("${COMMON[@]}" "${HOST_OPTIONS[@]}" "${GCC_HOST_OPTIONS[@]}" --with-cpu=cell --with-newlib --disable-shared --disable-tls --with-specs="${SPECS[*]}"
 	--enable-initfini-array
 	--disable-libssp --disable-libquadmath --disable-libgomp --disable-libitm --disable-libsanitizer --disable-libvtv)
+
+if [[ "${1:-}" == --print-config ]]; then
+	printf '%s\n' "target=$TARGET" "prefix=$PREFIX" "work=$WORK" "jobs=$JOBS" "${GCC_COMMON[@]}"
+	exit 0
+fi
 
 export PATH="$PREFIX/bin:$PATH"
 mkdir -p "$WORK/src" "$WORK/build" "$WORK/logs"
@@ -93,10 +118,10 @@ configure_and_make() {
 }
 
 fetch
-configure_and_make binutils "$WORK/src/$BINUTILS" all install -- "${COMMON[@]}" --disable-werror
+configure_and_make binutils "$WORK/src/$BINUTILS" all install -- "${COMMON[@]}" "${HOST_OPTIONS[@]}" --disable-werror
 configure_and_make gcc-stage1 "$WORK/src/$GCC" "all-gcc all-target-libgcc" "install-gcc install-target-libgcc" -- \
 	"${GCC_COMMON[@]}" --enable-languages=c --without-headers --disable-threads --disable-libatomic
-configure_and_make newlib "$WORK/src/$NEWLIB" all-target-newlib install-target-newlib -- "${COMMON[@]}" \
+configure_and_make newlib "$WORK/src/$NEWLIB" all-target-newlib install-target-newlib -- "${COMMON[@]}" "${BUILD_OPTIONS[@]}" \
 	--enable-newlib-io-long-long --enable-newlib-io-long-double --enable-newlib-io-c99-formats \
 	--enable-newlib-retargetable-locking --disable-newlib-supplied-syscalls
 configure_and_make gcc "$WORK/src/$GCC" all install -- "${GCC_COMMON[@]}" --enable-languages=c,c++ --enable-threads=posix

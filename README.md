@@ -1,3 +1,5 @@
+> **Experimental Windows derivative:** see [README-WINDOWS.md](README-WINDOWS.md). Original xSDK by Mena / xenosworks; Windows bootstrap and GUI are not yet validated end to end.
+
 <div align="center">
   <img src="assets/xsdk.png" alt="xsdk" width="640">
 </div>

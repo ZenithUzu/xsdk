@@ -1,14 +1,17 @@
 """xost's compiler in C (xsdk:src/xsc_compile.c), called through ctypes.
 
-make builds the library, build/host/libxsc.so, in WSL; the tools that compile shaders run there.
+make builds build/host/libxsc.so on Linux, or libxsc.dll for native Windows tools.
 """
 from __future__ import annotations
 
 import ctypes
 import struct
+import sys
 from pathlib import Path
 
-LIBRARY = Path(__file__).resolve().parents[2] / "build" / "host" / "libxsc.so"
+LIBRARY = Path(__file__).resolve().parents[2] / "build" / "host" / (
+    "libxsc.dll" if sys.platform == "win32" else "libxsc.so"
+)
 
 OK, REFUSED, REGISTERS, BAD_VALUE, MALFORMED, OUT_OF_MEMORY = range(6)
 STATUS_NAMES = ("ok", "refused", "registers", "bad value", "malformed", "out of memory")

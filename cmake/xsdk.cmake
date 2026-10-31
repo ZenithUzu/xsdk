@@ -50,6 +50,12 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 set(ENV{PKG_CONFIG_LIBDIR} "${XSDK_TOOLCHAIN}/powerpc-xsdk-elf/lib/pkgconfig")
 set(ENV{PKG_CONFIG_PATH} "")
 
+if(CMAKE_HOST_WIN32)
+	set(XSDK_HOST_XSC "${XSDK_ROOT}/build/host/libxsc.dll")
+else()
+	set(XSDK_HOST_XSC "${XSDK_ROOT}/build/host/libxsc.so")
+endif()
+
 set(XSDK_GLSLANG "${XSDK_TOOLCHAIN}/bin/glslang" CACHE FILEPATH
 	"glslang for xsdk_add_shaders; if it isn't there, tools/build_shaders.py finds one itself")
 
@@ -64,7 +70,7 @@ function(xsdk_add_shaders target)
 	endif()
 	add_custom_command(OUTPUT "${header}"
 		COMMAND python3 "${XSDK_ROOT}/tools/build_shaders.py" ${glslang} --output "${header}" ${sources}
-		DEPENDS ${sources} "${XSDK_ROOT}/tools/build_shaders.py" "${XSDK_ROOT}/build/host/libxsc.so"
+		DEPENDS ${sources} "${XSDK_ROOT}/tools/build_shaders.py" "${XSDK_HOST_XSC}"
 		VERBATIM)
 	target_sources(${target} PRIVATE "${header}")
 	target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")

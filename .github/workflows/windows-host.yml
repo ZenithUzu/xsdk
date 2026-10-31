@@ -1,0 +1,29 @@
+name: Windows host tools (experimental)
+on:
+  push:
+    branches: [windows-native]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-host:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-python
+      - name: Build real native host DLL
+        shell: msys2 {0}
+        run: make -j2 build/host/libxsc.dll HOST_CC=gcc PYTHON=python3
+      - name: Check DLL and portable orchestration
+        shell: msys2 {0}
+        run: |
+          python3 tools/windows/check_xsc.py
+          python3 -m unittest discover -s tests/windows -v
