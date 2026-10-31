@@ -23,7 +23,7 @@ HOST_LIBRARY_EXTENSION := so
 HOST_LDFLAGS :=
 ifeq ($(OS),Windows_NT)
 HOST_LIBRARY_EXTENSION := dll
-HOST_CFLAGS := $(filter-out -fPIC,$(HOST_CFLAGS))
+HOST_CFLAGS := $(filter-out -fPIC,$(HOST_CFLAGS)) -D__USE_MINGW_ANSI_STDIO=1
 HOST_LDFLAGS := -Wl,--export-all-symbols -static-libgcc
 endif
 HOST_XSC_LIBRARY := $(BUILD)/host/libxsc.$(HOST_LIBRARY_EXTENSION)
