@@ -11,7 +11,7 @@ cd "$sdk"
 export PATH="$prefix/bin:/ucrt64/bin:/usr/bin:$PATH"
 case "$action" in
 	dependencies)
-		pacman -S --needed --noconfirm base-devel git curl patch tar xz \
+		pacman -S --needed --noconfirm base-devel texinfo git curl patch tar xz \
 			mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gmp \
 			mingw-w64-ucrt-x86_64-mpfr mingw-w64-ucrt-x86_64-mpc \
 			mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-cmake \
