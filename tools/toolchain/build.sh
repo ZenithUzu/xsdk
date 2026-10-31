@@ -111,6 +111,11 @@ configure_and_make() {
 	step "$name"
 	mkdir -p "$build"
 	cd "$build"
+	# Native Windows generators read source paths from files, where MSYS2
+	# cannot translate /c/... arguments. Relative paths work in both runtimes.
+	if [[ "${MSYSTEM:-}" == UCRT64 ]]; then
+		source=$(realpath --relative-to="$PWD" "$source")
+	fi
 	"$source/configure" "$@" >"$WORK/logs/$name-configure.log" 2>&1
 	make -j"$JOBS" $targets >"$WORK/logs/$name-make.log" 2>&1
 	make $installs >"$WORK/logs/$name-install.log" 2>&1
