@@ -101,8 +101,10 @@ function(xsdk_add_xex target)
 	set_property(TARGET ${target} APPEND PROPERTY LINK_DEPENDS
 		"${XSDK_ROOT}/build/libxsdk.a" "${XSDK_ROOT}/src/xsdk.ld")
 	add_custom_command(TARGET ${target} POST_BUILD
-		COMMAND sh -c "'${CMAKE_OBJDUMP}' -d '$<TARGET_FILE:${target}>' | python3 '${XSDK_ROOT}/tools/xenia_scan.py'"
+		COMMAND python3 "${XSDK_ROOT}/tools/xenia_scan_file.py"
+			"${CMAKE_OBJDUMP}" "$<TARGET_FILE:${target}>"
 		COMMAND python3 "${XSDK_ROOT}/tools/elf2xex.py" ${options}
 			"$<TARGET_FILE:${target}>" "$<TARGET_FILE_DIR:${target}>/${target}.xex"
 		VERBATIM)
 endfunction()
+
