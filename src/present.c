@@ -178,7 +178,7 @@ NTSTATUS xsdk_present_open(
 	assert(!present.open && buffer_count >= 2 && buffer_count <= XSDK_PRESENT_MAX_BUFFERS);
 	assert(swap_interval >= 1 && swap_interval <= 2);
 	const bool splash_held = mode == XSDK_DISPLAY_720P && xsdk_splash_hand_over(width, height);
-	const NTSTATUS status = splash_held ? STATUS_SUCCESS : xsdk_display_open(mode, width, height);
+	NTSTATUS status = splash_held ? STATUS_SUCCESS : xsdk_display_open(mode, width, height);
 	if (!NT_SUCCESS(status))
 		return status;
 	const bool letterbox = xsdk_display_letterboxed();
@@ -199,8 +199,8 @@ NTSTATUS xsdk_present_open(
 		if (!present.buffers[i]) {
 			for (uint32_t j = 0; j < i; j++)
 				xsdk_gpu_free(present.buffers[j]);
-			xsdk_display_close();
-			if (splash_held)
+			const NTSTATUS closed = xsdk_display_close();
+			if (splash_held && NT_SUCCESS(closed))
 				xsdk_splash_free();
 			return STATUS_NO_MEMORY;
 		}
@@ -211,10 +211,15 @@ NTSTATUS xsdk_present_open(
 	__asm__ volatile("sync" ::: "memory");
 	// The last buffer stands for frame -1, so frame 0 resolves into the first; the splash's logo stands in for it.
 	if (!splash_held && letterbox)
-		(void)xsdk_display_show_sized(present.addresses[buffer_count - 1], &present.own_size);
+		status = xsdk_display_show_sized(present.addresses[buffer_count - 1], &present.own_size);
 	else if (!splash_held)
-		(void)xsdk_display_show(present.addresses[buffer_count - 1], *width);
+		status = xsdk_display_show(present.addresses[buffer_count - 1], *width);
 	present.open = true;
+	if (!NT_SUCCESS(status)) {
+		xsdk_log_write("present: showing the first buffer failed: 0x%08X", (unsigned)status);
+		xsdk_present_close();
+		return status;
+	}
 	VdSetGraphicsInterruptCallback(on_interrupt, NULL);
 	return STATUS_SUCCESS;
 }
@@ -316,7 +321,15 @@ void xsdk_present_close(void)
 		(void)xsdk_thread_sleep(1);
 	// So the kernel doesn't call into the title once it unloads; XAM runs again afterwards (docs/HARDWARE.md).
 	VdSetGraphicsInterruptCallback(0, 0);
-	xsdk_display_close();
+	if (present.queued) {
+		const NTSTATUS status = xsdk_gpu_wait(present.fences[(present.queued - 1) % QUEUE_SLOTS], CLOSE_TIMEOUT_MS);
+		if (!NT_SUCCESS(status)) {
+			xsdk_log_write("present: the GPU is still using front buffers: 0x%08X; keeping them", (unsigned)status);
+			return;
+		}
+	}
+	if (!NT_SUCCESS(xsdk_display_close()))
+		return;
 	if (present.splash_held)
 		xsdk_splash_free();
 	for (uint32_t i = 0; i < present.buffer_count; i++)

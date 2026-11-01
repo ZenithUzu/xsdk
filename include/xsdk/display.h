@@ -30,7 +30,8 @@ NTSTATUS xsdk_display_show(uint32_t address, uint32_t pitch_pixels);
 // The GPU address of the buffer the display scans out now.
 uint32_t xsdk_display_shown_address(void);
 // Shows XAM's surface again at the kernel's scaling. The title's exit calls it too.
-void xsdk_display_close(void);
+// On timeout, keep front buffers allocated and retry before releasing them.
+NTSTATUS xsdk_display_close(void);
 
 #ifdef __cplusplus
 }

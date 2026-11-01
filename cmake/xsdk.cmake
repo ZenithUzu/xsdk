@@ -10,12 +10,18 @@ set(XSDK_PREFIX "${XSDK_TOOLCHAIN}/bin/powerpc-xsdk-elf-")
 # try_compile projects read this file again, without the cache.
 list(APPEND CMAKE_TRY_COMPILE_PLATFORM_VARIABLES XSDK_TOOLCHAIN)
 
-set(CMAKE_C_COMPILER "${XSDK_PREFIX}gcc")
-set(CMAKE_CXX_COMPILER "${XSDK_PREFIX}g++")
-set(CMAKE_ASM_COMPILER "${XSDK_PREFIX}gcc")
-set(CMAKE_AR "${XSDK_PREFIX}ar")
-set(CMAKE_RANLIB "${XSDK_PREFIX}ranlib")
-set(CMAKE_OBJDUMP "${XSDK_PREFIX}objdump")
+# CMAKE_SYSTEM_NAME is Generic, so select host tool suffix explicitly.
+set(XSDK_HOST_TOOL_SUFFIX "")
+if(CMAKE_HOST_WIN32)
+	set(XSDK_HOST_TOOL_SUFFIX ".exe")
+endif()
+
+set(CMAKE_C_COMPILER "${XSDK_PREFIX}gcc${XSDK_HOST_TOOL_SUFFIX}")
+set(CMAKE_CXX_COMPILER "${XSDK_PREFIX}g++${XSDK_HOST_TOOL_SUFFIX}")
+set(CMAKE_ASM_COMPILER "${XSDK_PREFIX}gcc${XSDK_HOST_TOOL_SUFFIX}")
+set(CMAKE_AR "${XSDK_PREFIX}ar${XSDK_HOST_TOOL_SUFFIX}")
+set(CMAKE_RANLIB "${XSDK_PREFIX}ranlib${XSDK_HOST_TOOL_SUFFIX}")
+set(CMAKE_OBJDUMP "${XSDK_PREFIX}objdump${XSDK_HOST_TOOL_SUFFIX}")
 
 set(CMAKE_C_FLAGS_INIT "-mcpu=cell -fno-pic")
 set(CMAKE_CXX_FLAGS_INIT "-mcpu=cell -fno-pic")
@@ -50,21 +56,33 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 set(ENV{PKG_CONFIG_LIBDIR} "${XSDK_TOOLCHAIN}/powerpc-xsdk-elf/lib/pkgconfig")
 set(ENV{PKG_CONFIG_PATH} "")
 
-set(XSDK_GLSLANG "${XSDK_TOOLCHAIN}/bin/glslang" CACHE FILEPATH
+if(CMAKE_HOST_WIN32)
+	set(XSDK_HOST_XSC "${XSDK_ROOT}/build/host/libxsc.dll")
+else()
+	set(XSDK_HOST_XSC "${XSDK_ROOT}/build/host/libxsc.so")
+endif()
+
+set(XSDK_GLSLANG "${XSDK_TOOLCHAIN}/bin/glslang${XSDK_HOST_TOOL_SUFFIX}" CACHE FILEPATH
 	"glslang for xsdk_add_shaders; if it isn't there, tools/build_shaders.py finds one itself")
 
 # Compiles a target's GLSL and HLSL files, .vert, .frag, _vs.hlsl and _ps.hlsl, into <target>_shaders.h, which its
 # sources include (tools/build_shaders.py); once a target.
 function(xsdk_add_shaders target)
 	set(header "${CMAKE_CURRENT_BINARY_DIR}/${target}_shaders.h")
-	list(TRANSFORM ARGN PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/" REGEX "^[^/]" OUTPUT_VARIABLE sources)
+	set(sources)
+	foreach(source IN LISTS ARGN)
+		if(NOT IS_ABSOLUTE "${source}")
+			set(source "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+		endif()
+		list(APPEND sources "${source}")
+	endforeach()
 	set(glslang "")
 	if(EXISTS "${XSDK_GLSLANG}")
 		set(glslang --glslang "${XSDK_GLSLANG}")
 	endif()
 	add_custom_command(OUTPUT "${header}"
 		COMMAND python3 "${XSDK_ROOT}/tools/build_shaders.py" ${glslang} --output "${header}" ${sources}
-		DEPENDS ${sources} "${XSDK_ROOT}/tools/build_shaders.py" "${XSDK_ROOT}/build/host/libxsc.so"
+		DEPENDS ${sources} "${XSDK_ROOT}/tools/build_shaders.py" "${XSDK_HOST_XSC}"
 		VERBATIM)
 	target_sources(${target} PRIVATE "${header}")
 	target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
@@ -89,8 +107,10 @@ function(xsdk_add_xex target)
 	set_property(TARGET ${target} APPEND PROPERTY LINK_DEPENDS
 		"${XSDK_ROOT}/build/libxsdk.a" "${XSDK_ROOT}/src/xsdk.ld")
 	add_custom_command(TARGET ${target} POST_BUILD
-		COMMAND sh -c "'${CMAKE_OBJDUMP}' -d '$<TARGET_FILE:${target}>' | python3 '${XSDK_ROOT}/tools/xenia_scan.py'"
+		COMMAND python3 "${XSDK_ROOT}/tools/xenia_scan_file.py"
+			"${CMAKE_OBJDUMP}" "$<TARGET_FILE:${target}>"
 		COMMAND python3 "${XSDK_ROOT}/tools/elf2xex.py" ${options}
 			"$<TARGET_FILE:${target}>" "$<TARGET_FILE_DIR:${target}>/${target}.xex"
 		VERBATIM)
 endfunction()
+

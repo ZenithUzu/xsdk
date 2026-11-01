@@ -112,8 +112,8 @@ NTSTATUS xsdk_splash_begin(void)
 		status = fade_in();
 	}
 	if (!NT_SUCCESS(status)) {
-		xsdk_display_close();
-		free_buffers();
+		if (NT_SUCCESS(xsdk_display_close()))
+			free_buffers();
 		xsdk_log_write("splash: failed: 0x%08X", (unsigned)status);
 	}
 	return status;
@@ -123,8 +123,8 @@ void xsdk_splash_end(void)
 {
 	if (!splash.up || splash.handed_over)
 		return;
-	xsdk_display_close();
-	free_buffers();
+	if (NT_SUCCESS(xsdk_display_close()))
+		free_buffers();
 }
 
 bool xsdk_splash_hand_over(uint32_t *width, uint32_t *height)

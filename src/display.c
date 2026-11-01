@@ -345,12 +345,17 @@ uint32_t xsdk_display_shown_address(void)
 	return gpu_registers[D1GRPH_PRIMARY_SURFACE_ADDRESS];
 }
 
-void xsdk_display_close(void)
+NTSTATUS xsdk_display_close(void)
 {
 	if (!is_open)
-		return;
+		return STATUS_SUCCESS;
 	if (scaler_applied)
 		write_scaler(old_scaler);
-	(void)apply(&old_surface);
+	const NTSTATUS status = apply(&old_surface);
+	if (!NT_SUCCESS(status)) {
+		xsdk_log_write("display: restoring the system surface failed: 0x%08X; keeping front buffers", (unsigned)status);
+		return status;
+	}
 	is_open = false;
+	return STATUS_SUCCESS;
 }

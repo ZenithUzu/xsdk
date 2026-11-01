@@ -22,7 +22,7 @@ typedef struct {
 // Zeroed memory that lives till xsdk_xsc_release; NULL, with the error set, if there's none.
 void *xsdk_xsc_alloc(Xsc *x, size_t bytes);
 // Records the first error and returns false.
-bool xsdk_xsc_fail(Xsc *x, XsdkXscStatus status, const char *format, ...) __attribute__((format(printf, 3, 4)));
+bool xsdk_xsc_fail(Xsc *x, XsdkXscStatus status, const char *format, ...) __attribute__((format(gnu_printf, 3, 4)));
 // Makes room for one more item in the array *items points to.
 bool xsdk_xsc_room(Xsc *x, void *items, size_t count, size_t *capacity, size_t item_bytes);
 char *xsdk_xsc_copy_text(Xsc *x, const char *text, size_t length_bytes);

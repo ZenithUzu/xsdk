@@ -17,6 +17,17 @@ WARNINGS := -Wall -Wextra -Werror
 CFLAGS := -mcpu=cell -fno-pic -std=gnu17 -O2 -g $(WARNINGS) -Iinclude -MMD -MP
 CXXFLAGS := -mcpu=cell -fno-pic -std=c++23 -O2 -g $(WARNINGS) -Iinclude -MMD -MP
 HOST_CFLAGS := -std=gnu17 -O2 -g $(WARNINGS) -fPIC -Iinclude -MMD -MP
+
+# A Windows host loads a native DLL, not an ELF shared object.
+HOST_LIBRARY_EXTENSION := so
+HOST_LDFLAGS :=
+ifeq ($(OS),Windows_NT)
+HOST_LIBRARY_EXTENSION := dll
+HOST_CFLAGS := $(filter-out -fPIC,$(HOST_CFLAGS)) -D__USE_MINGW_ANSI_STDIO=1
+HOST_LDFLAGS := -Wl,--export-all-symbols -static-libgcc
+endif
+HOST_XSC_LIBRARY := $(BUILD)/host/libxsc.$(HOST_LIBRARY_EXTENSION)
+
 ASFLAGS := -mcpu=cell -Wa,-mregnames -Iinclude -MMD -MP
 LDFLAGS := -static -nostdlib -T src/xsdk.ld
 # libxsdk.a after libstdc++: what libstdc++ calls that xsdk replaces in newlib, rename among them, comes from xsdk.
@@ -94,7 +105,7 @@ UNROLL_LOOPS_OBJECTS := $(BUILD)/tests/unroll_loops_o2.o $(BUILD)/tests/unroll_l
 	instancing_probes cpu_probes xam_probes hiz_pass_probes msaa_probes skin_probe drive_probes system_probes launch_probes 	store_probes
 # Keep the ELFs and objects that pattern rules build on the way to a .xex.
 .SECONDARY:
-all: $(BUILD)/m55_check.xex $(BUILD)/xsdk_test.xex $(BUILD)/host/libxsc.so $(BUILD)/audio_check.xex $(BUILD)/pacing_test.xex \
+all: $(BUILD)/m55_check.xex $(BUILD)/xsdk_test.xex $(HOST_XSC_LIBRARY) $(BUILD)/audio_check.xex $(BUILD)/pacing_test.xex \
 	$(BUILD)/guide_check.xex $(BUILD)/save_check.xex $(BUILD)/save_check_t2.xex $(BUILD)/terminate_check.xex \
 	$(BUILD)/launch_check.xex $(BUILD)/launch_target.xex $(PROBES:%=$(BUILD)/%.xex)
 
@@ -107,11 +118,11 @@ cmake_configure = cmake \
 # A title built through cmake/xsdk.cmake, as CMake projects such as Dusklight build; needs CMake, Ninja and, for its
 # HLSL, glslang-xenon (docs/GETTING_STARTED.md, section 4). cmake_check_break builds it into $(BUILD)/cmake_check_brk
 # with its HLSL through xost's Windows glslang, Khronos's, which drops b# and i#, so its HLSL check fails.
-cmake_check: $(BUILD)/libxsdk.a $(BUILD)/host/libxsc.so
+cmake_check: $(BUILD)/libxsdk.a $(HOST_XSC_LIBRARY)
 	$(call cmake_configure,tests/cmake,$(BUILD)/cmake_check)
 	cmake --build $(BUILD)/cmake_check
 
-cmake_check_break: $(BUILD)/libxsdk.a $(BUILD)/host/libxsc.so
+cmake_check_break: $(BUILD)/libxsdk.a $(HOST_XSC_LIBRARY)
 	$(call cmake_configure,tests/cmake,$(BUILD)/cmake_check_brk) \
 		-DXSDK_GLSLANG=$(CURDIR)/xenos-toolchain/tools/glslang/bin/glslang.exe
 	cmake --build $(BUILD)/cmake_check_brk
@@ -125,10 +136,10 @@ SDL3_DIR ?=
 sample_build = $(call cmake_configure,samples/$(1),$(BUILD)/samples/$(2)) -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 	--no-warn-unused-cli $(if $(SDL3_DIR),-DSDL3_DIR=$(SDL3_DIR)) $(3) && cmake --build $(BUILD)/samples/$(2)
 
-samples: $(BUILD)/libxsdk.a $(BUILD)/host/libxsc.so
+samples: $(BUILD)/libxsdk.a $(HOST_XSC_LIBRARY)
 	for sample in $(SAMPLES); do $(call sample_build,$$sample,$$sample) || exit 1; done
 
-sample_breaks: $(BUILD)/libxsdk.a $(BUILD)/host/libxsc.so
+sample_breaks: $(BUILD)/libxsdk.a $(HOST_XSC_LIBRARY)
 	for sample in $(SAMPLE_BREAKS); do $(call sample_build,$$sample,$${sample}_brk,-DSAMPLE_BREAK=ON) || exit 1; done
 
 $(BUILD)/%.xex: $(BUILD)/%.elf tools/elf2xex.py
@@ -245,7 +256,7 @@ XSC_PACK ?= ../dusklight-xenon/platforms/xenon/glsl_pack.c
 XSC_REFUSED := xenos-toolchain/xsc/testdata/vk_frag_coord_depth.frag.spv \
 	xenos-toolchain/xsc/testdata/vk_frag_depth_branch.frag.spv
 
-$(BUILD)/probe/probe_xsc_programs.h: $(XSC_PACK) tools/gen_xsc_probe.py $(BUILD)/host/libxsc.so
+$(BUILD)/probe/probe_xsc_programs.h: $(XSC_PACK) tools/gen_xsc_probe.py $(HOST_XSC_LIBRARY)
 	$(PYTHON) tools/gen_xsc_probe.py $(XSC_PACK) $@ $(XSC_REFUSED)
 
 $(BUILD)/tests/probe_xsc.o: CFLAGS += -I$(BUILD)/probe
@@ -291,7 +302,7 @@ $(BUILD)/tests/probe_scalar_forms.o: $(BUILD)/probe/probe_scalar_forms_cases.h
 LOOP_BREAKS := nogate invert swap hoist noa0
 
 $(BUILD)/probe/probe_loop_break_cases.h: tools/gen_loop_break_probe.py tools/gen_xsc_probe.py \
-	tools/gen_triangle_shaders.py $(BUILD)/host/libxsc.so
+	tools/gen_triangle_shaders.py $(HOST_XSC_LIBRARY)
 	$(PYTHON) tools/gen_loop_break_probe.py $@
 
 $(BUILD)/tests/probe_loop_break.o: CFLAGS += -I$(BUILD)/probe
@@ -310,7 +321,7 @@ INSTANCING_BREAKS := nofloor pervtx nostep
 
 $(BUILD)/probe/probe_instancing_cases.h: tools/gen_instancing_probe.py tools/gen_loop_break_probe.py \
 	tools/gen_xsc_probe.py tools/gen_triangle_shaders.py xenos-toolchain/xsc/testdata/vk_instance_rate.vert.spv \
-	$(BUILD)/host/libxsc.so
+	$(HOST_XSC_LIBRARY)
 	$(PYTHON) tools/gen_instancing_probe.py $@
 
 $(BUILD)/tests/probe_instancing.o: CFLAGS += -I$(BUILD)/probe
@@ -431,8 +442,8 @@ $(BUILD)/tests/probe_skin.o: $(BUILD)/probe/probe_skin_shaders.h
 $(BUILD)/probe_skin.elf: $(BUILD)/tests/probe_skin.o $(SKIN_PROBE)/xsc_lower_block.o $(BUILD)/libxsdk.a src/xsdk.ld
 	$(CC) $(LDFLAGS) -o $@ $(BUILD)/tests/probe_skin.o $(SKIN_PROBE)/xsc_lower_block.o $(LIBS)
 
-$(BUILD)/host/libxsc.so: $(XSC_SOURCES:src/%.c=$(BUILD)/host/%.o)
-	$(HOST_CC) -shared -o $@ $^
+$(HOST_XSC_LIBRARY): $(XSC_SOURCES:src/%.c=$(BUILD)/host/%.o)
+	$(HOST_CC) -shared $(HOST_LDFLAGS) -o $@ $^
 
 $(BUILD)/host/%.o: src/%.c
 	@mkdir -p $(@D)
@@ -492,3 +503,12 @@ drive_probes: $(BUILD)/probe_drives.xex $(BUILD)/probe_file_growth.xex $(BUILD)/
 # The focused query probe also checks the executable image pool.
 $(BUILD)/probe_query_memory.elf: $(BUILD)/tests/probe_query_memory.o $(BUILD)/tests/jit_pool.o $(BUILD)/libxsdk.a src/xsdk.ld
 	$(CC) $(LDFLAGS) -o $@ $(BUILD)/tests/probe_query_memory.o $(BUILD)/tests/jit_pool.o $(LIBS)
+
+# Linux host register mocks exercise restore failures without claiming console timing.
+.PHONY: display_host_check
+display_host_check: $(BUILD)/host/display_check
+	$(BUILD)/host/display_check
+
+$(BUILD)/host/display_check: tests/host_display.c src/display.c src/gpu_private.h include/xsdk/display.h
+	@mkdir -p $(@D)
+	$(HOST_CC) -std=gnu17 -O2 -g $(WARNINGS) -Iinclude tests/host_display.c src/display.c -o $@

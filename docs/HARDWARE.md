@@ -5382,3 +5382,16 @@ opened with libzip, and only then is the ROM deleted and the title started again
   the store's own capture). With `sf64.o2r` taken away and a ROM put in its place, the first run took 62 s and deleted
   the ROM, and the game read the new archive, 14,559,161 bytes in 419 ms, and ran at 28.3 to 30.0 fps
   (`first_run_store_update.log`, `first_run_store_update_restart.log`).
+
+## Windows fork: display transition report (2026-11-01, unverified)
+
+The user reports static at startup and exit on their console. There is no capture or transition log yet,
+so neither its cause nor its resolution is established. The Windows fork previously had the same display,
+splash and presentation sources as upstream `8c58c7a`.
+
+Code review found that display restoration discarded `apply`'s timeout while presentation and splash freed
+front buffers regardless. It also found that presentation ignored a failed initial show and did not wait for
+the last GPU fence after its close queue timed out. The fork checks those results and retains buffers on failure.
+The Linux register mock covers timeout, retry and restoration; it cannot establish hardware latch timing,
+scaler behavior or absence of visible static. The console present test checks restoration before freeing.
+These are pending hardware validation, not new established facts about Xenos or the kernel.

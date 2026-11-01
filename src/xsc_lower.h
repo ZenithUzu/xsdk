@@ -221,7 +221,7 @@ typedef struct {
 
 bool xsdk_xsc_lower_init(Xsc *x, XscLower *l, const XscModule *m, const XscInterface *si, XscProgram *p,
 	const XscType *types, bool vertex, int64_t first_reg, int64_t literal_base);
-bool xsdk_xsc_lower_refuse(XscLower *l, const char *format, ...) __attribute__((format(printf, 2, 3)));
+bool xsdk_xsc_lower_refuse(XscLower *l, const char *format, ...) __attribute__((format(gnu_printf, 2, 3)));
 const XscInstr *xsdk_xsc_lower_result(XscLower *l, uint32_t ssa);
 int64_t xsdk_xsc_fresh(XscLower *l);
 int64_t xsdk_xsc_vec_size(XscLower *l, uint32_t ssa);
@@ -357,7 +357,7 @@ void xsdk_xsc_fill_local_store(XscLower *l, const XscStores *stores, const bool 
 bool xsdk_xsc_check_local_stores(
 	Xsc *x, const XscModule *m, const bool *locals, uint32_t merged_local, uint32_t merge_label);
 int64_t xsdk_xsc_literal_base(const XscInterface *si);
-const char *xsdk_xsc_format(Xsc *x, const char *format, ...) __attribute__((format(printf, 2, 3)));
+const char *xsdk_xsc_format(Xsc *x, const char *format, ...) __attribute__((format(gnu_printf, 2, 3)));
 XscConstant xsdk_xsc_vector_constant(const char *name, int64_t reg, int64_t regs);
 bool xsdk_xsc_add_constant(Xsc *x, XscConstants *constants, XscConstant c);
 // A sampler's entry: GLSL's named tex<slot>, a 2D sampler; HLSL's by its name and dimension. Its name NULL without

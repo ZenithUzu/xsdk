@@ -85,6 +85,7 @@ void test_present(void)
 	check("present: GPU open", NT_SUCCESS(status));
 	if (!NT_SUCCESS(status))
 		return;
+	const uint32_t original_address = xsdk_display_shown_address();
 	uint32_t width = 0;
 	uint32_t height = 0;
 	const NTSTATUS display_status = xsdk_display_open(XSDK_DISPLAY_720P, &width, &height);
@@ -96,8 +97,12 @@ void test_present(void)
 	// Without a display, as in Xenia, the frames still resolve and are checked.
 	if (buffers[0] && buffers[1])
 		present_frames(buffers, has_display);
-	xsdk_display_close();
-	for (uint32_t i = 0; i < BUFFERS; i++)
-		xsdk_gpu_free(buffers[i]);
+	const NTSTATUS closed = xsdk_display_close();
+	check("present: system surface restored before freeing front buffers",
+		NT_SUCCESS(closed) && (!has_display || xsdk_display_shown_address() == original_address));
+	if (NT_SUCCESS(closed)) {
+		for (uint32_t i = 0; i < BUFFERS; i++)
+			xsdk_gpu_free(buffers[i]);
+	}
 	check("present: GPU close", NT_SUCCESS(xsdk_gpu_close()));
 }
