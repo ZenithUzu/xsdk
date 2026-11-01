@@ -1,5 +1,6 @@
 """Build upstream CMake samples with Windows paths passed as separate arguments."""
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +19,8 @@ def build(sdk, prefix, jobs, build_type, sdl="", *extra):
         args = ["cmake", "-S", str(sdk / "samples" / name), "-B", str(output), "-G", "Ninja",
                 "-DCMAKE_TOOLCHAIN_FILE=" + str(sdk / "cmake/xsdk.cmake"),
                 "-DXSDK_TOOLCHAIN=" + str(prefix), "-DCMAKE_BUILD_TYPE=" + build_type]
+        if os.environ.get("XSDK_GLSLANG_OVERRIDE"):
+            args.append("-DXSDK_GLSLANG=" + os.environ["XSDK_GLSLANG_OVERRIDE"])
         if sdl and name == "sdl3":
             args.append("-DSDL3_DIR=" + str(Path(sdl).resolve()))
         subprocess.run(args + extra, check=True)

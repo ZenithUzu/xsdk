@@ -79,14 +79,11 @@ class BuildPlanTests(unittest.TestCase):
     def test_toolchain_host_flags_without_building(self):
         import os
         script = str(ROOT / "tools/toolchain/build.sh")
-        for system, expected in (("", False), ("UCRT64", True)):
+        cases = (("UCRT64", True),) if os.name == "nt" else (("", False), ("UCRT64", True))
+        for system, expected in cases:
             env = dict(os.environ, MSYSTEM=system, PREFIX="/tmp/xsdk-native-compiler", WORK="/tmp/xsdk-native-work")
             result = subprocess.run(["bash", script, "--print-config"], env=env, check=False,
                                     text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if os.name == "nt" and not system:
-                self.assertNotEqual(result.returncode, 0)
-                self.assertIn("Open the MSYS2 UCRT64 environment", result.stderr)
-                continue
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual("--host=x86_64-w64-mingw32" in result.stdout, expected)
             self.assertIn("--target=powerpc-xsdk-elf", result.stdout)

@@ -17,7 +17,7 @@ def cmake_options(value):
         raise ValueError('Opciones CMake: usa una lista JSON, por ejemplo ["-DFEATURE=ON"]') from error
     if not isinstance(args, list) or any(not isinstance(arg, str) for arg in args):
         raise ValueError("Las opciones CMake deben ser una lista de textos")
-    reserved = ("CMAKE_TOOLCHAIN_FILE", "CMAKE_BUILD_TYPE", "XSDK_TOOLCHAIN", "SDL3_DIR")
+    reserved = ("CMAKE_TOOLCHAIN_FILE", "CMAKE_BUILD_TYPE", "XSDK_TOOLCHAIN", "SDL3_DIR", "XSDK_GLSLANG")
     for arg in args:
         if not arg.startswith("-D") or "=" not in arg or any(c in arg for c in "\n\r\x00"):
             raise ValueError("Solo se aceptan opciones -DNOMBRE=valor")

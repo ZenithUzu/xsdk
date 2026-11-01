@@ -185,7 +185,7 @@ No hace falta reconstruir GCC para estos cambios.
   Los XEX de las otras pruebas también requieren ejecución real; construirlos no los declara aprobados.
 - **Actualizar código:** actualiza el fork por Git con `--ff-only`. Se niega a sobrescribir cambios locales,
   archivos sin seguimiento u otros repositorios. La casilla de actualización al abrir es opcional y viene apagada.
-  Reinicia la interfaz después de actualizar. Las copias ZIP requieren una nueva instalación Git para esta función.
+  Reinicia la interfaz después de actualizar. Las copias ZIP se actualizan descargando una copia Git nueva en la carpeta de trabajo, conservando la original.
 
 ## Instalador y herramientas portables
 
@@ -211,3 +211,39 @@ pero no significa que ya exista un paquete aprobado: hay que completar ese flujo
 No es todavía un instalador autónomo que incluya Python y MSYS2.
 
 La estática sigue pendiente de validación en Xbox; ninguna opción de interfaz sustituye esa comprobación.
+
+## Usar las herramientas que ya tienes
+
+La pestaña **Mis herramientas** es ahora la pantalla inicial. Al abrirla se comprueban rutas habituales,
+las rutas guardadas, `XSDK_TOOLCHAIN` y el PATH. No descarga paquetes ni compila GCC, newlib o shaders.
+**Rutas y proyecto** permite indicar cualquier instalación existente y seleccionar un `glslang.exe` separado.
+Los valores guardados tienen prioridad si contienen las herramientas. La detección no recorre todo el disco.
+
+1. Abre **Iniciar-Windows.cmd** y pulsa **Detectar / comprobar**.
+2. Si hace falta, indica MSYS2, la carpeta raíz del compilador, xSDK y glslang en **Rutas y proyecto**.
+3. Selecciona tu proyecto y pulsa **Compilar proyecto**. Reutiliza las herramientas elegidas.
+4. Si cambió xSDK, pulsa **Reconstruir solo SDK** y luego compila tu proyecto.
+
+La tabla muestra GCC/C++, binutils, newlib, glslang, las bibliotecas del SDK y las dependencias host.
+Los comandos de versión tienen tiempo límite y se ejecutan fuera del hilo de la interfaz.
+Que un ejecutable responda no sustituye las pruebas de compilación y consola.
+
+**Buscar actualizaciones** consulta los commits remotos del fork y de glslang-xenon, sin instalar ni construir.
+También compara las versiones locales de GCC, binutils y newlib con la receta que trae tu código de xSDK.
+Si los commits son distintos, no se presupone que un fork personalizado sea más antiguo.
+Las instalaciones sin registro muestran que sus parches no están comprobados; no se marcan como obsoletas
+solo por ser anteriores a esta interfaz. La versión de glslang por sí sola no demuestra que sea la variante xenon.
+
+**Instalar / actualizar seleccionado** actúa únicamente sobre la fila elegida:
+
+- **Compilador, binutils o newlib:** ofrece una construcción larga en una carpeta NUEVA y conserva el compilador
+  anterior. No reutiliza los sellos de una construcción vieja. No ocurre al abrir ni al compilar un proyecto.
+- **Shaders:** actualiza el checkout xenon, si existe, mediante avance directo, y construye solo shaders.
+- **xSDK:** actualiza una copia Git limpia. Si venías de ZIP, descarga una copia Git nueva bajo
+  `work/sdk-updates`, conserva la original y cambia la ruta elegida. Abre la interfaz de la nueva carpeta
+  y reconstruye solo SDK/proyectos.
+- **Dependencias:** instala los paquetes host requeridos en el MSYS2 elegido; no reconstruye el compilador PowerPC.
+  La detección de dependencias comprueba presencia, no promete que todos los paquetes del sistema estén actualizados.
+
+Las construcciones exitosas registran su receta en `components.json` dentro de la carpeta de trabajo.
+No se necesita ni se espera a que termine el paquete precompilado de GitHub para usar este administrador.

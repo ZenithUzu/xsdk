@@ -11,6 +11,13 @@ Permite preparar herramientas PowerPC y construir aplicaciones `.xex` para Xbox 
 [Descargar main en ZIP](https://github.com/ZenithUzu/xsdk/archive/refs/heads/main.zip) ·
 [Guía de Windows](README-WINDOWS.md) · [Documentación original](README-UPSTREAM.md)
 
+## Si ya tienes las herramientas
+
+Abre **Iniciar-Windows.cmd**. **Mis herramientas** detecta tus instalaciones y muestra versiones;
+puedes dar sus rutas en **Rutas y proyecto**. **Compilar proyecto** reutiliza GCC/newlib y shaders.
+**Buscar actualizaciones** no instala nada. Elige el componente que quieras actualizar;
+reconstruir solo xSDK no reconstruye el toolchain. La instalación desde cero queda en una pestaña avanzada.
+
 ## Empezar en Windows
 
 1. Instala Python 3.11 o posterior con tkinter y el lanzador `py`.

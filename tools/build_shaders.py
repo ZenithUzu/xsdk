@@ -21,6 +21,7 @@ glslang-xenon (docs/GETTING_STARTED.md, section 4), whose fmod truncates and whi
 it from Khronos's glslang, which reports the same version.
 """
 
+import os
 import argparse
 import re
 import shutil
@@ -79,6 +80,7 @@ static inline void xsdk_built_shader_set_literals(const XsdkBuiltShader *shader)
 
 
 def find_glslang(given, hlsl):
+    given = given or os.environ.get("XSDK_GLSLANG_OVERRIDE")
     # Whole, as glslang runs in another directory.
     found = shutil.which(given or "glslang")
     if found:

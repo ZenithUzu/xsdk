@@ -32,6 +32,11 @@ jobs:
           [System.Management.Automation.Language.Parser]::ParseFile(
             "$pwd/Instalar-Windows.ps1", [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count) { $errors | Out-String | Write-Error; exit 1 }
+      - name: Check UI layout without building tools
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = "$pwd/tools/windows"
+          python -c "import tkinter as tk; from gui import App; r=tk.Tk(); a=App(r); r.update_idletasks(); r.destroy()"
       - name: Build real native host DLL
         shell: msys2 {0}
         run: make -j2 build/host/libxsc.dll HOST_CC=gcc PYTHON=python3

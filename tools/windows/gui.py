@@ -11,6 +11,7 @@ from tkinter import filedialog, messagebox, ttk
 
 from build_plan import plan
 from options import BUILD_TYPES, MAKE_TARGETS
+from manager import inspect
 
 ROOT = Path(__file__).resolve().parents[2]
 CREDITS = """xSDK original: Mena / xenosworks — MIT
@@ -35,7 +36,7 @@ class App:
         self.settings_path = self.folder / "settings.json"
         defaults = {"msys": "C:/msys64", "sdk": str(ROOT),
                     "prefix": "C:/xsdk-tools/compiler", "work": "C:/xsdk-tools/work", "project": "", "jobs": "4",
-                    "sdl": "", "build_type": "Release", "cmake_args": "[]", "target": "cmake_check", "auto_update": "0"}
+                    "sdl": "", "build_type": "Release", "cmake_args": "[]", "target": "cmake_check", "auto_update": "0", "glslang": ""}
         try:
             saved = json.loads(self.settings_path.read_text(encoding="utf-8"))
             defaults.update({key: str(value) for key, value in saved.items() if key in defaults})
@@ -44,16 +45,41 @@ class App:
         self.fields = {name: tk.StringVar(value=value) for name, value in defaults.items()}
         self.status = tk.StringVar(value="Port experimental — aún requiere validación completa en Windows")
         window.title("xSDK para Windows — experimental")
-        window.geometry("1100x900")
+        window.geometry("1100x820")
         panel = ttk.Frame(window, padding=14)
         panel.pack(fill="both", expand=True)
         ttk.Label(panel, text="xSDK · Windows", font=("Segoe UI", 20, "bold")).pack(anchor="w")
         ttk.Label(panel, text="Compilador PowerPC, shaders y ejemplos · sin Debian ni WSL").pack(
             anchor="w", pady=(0, 12))
-        grid = ttk.Frame(panel)
+        tabs = ttk.Notebook(panel)
+        tabs.pack(fill="x", pady=(0, 8))
+        home = ttk.Frame(tabs, padding=8)
+        settings = ttk.Frame(tabs, padding=8)
+        advanced = ttk.Frame(tabs, padding=8)
+        tabs.add(home, text="Mis herramientas")
+        tabs.add(settings, text="Rutas y proyecto")
+        tabs.add(advanced, text="Instalación y pruebas avanzadas")
+        ttk.Label(home, text="Reutiliza tus herramientas. Compilar un proyecto no reconstruye GCC ni newlib.").pack(anchor="w")
+        self.inventory = ttk.Treeview(home, columns=("name", "version", "status"), show="headings", height=8)
+        for column, title, width in (("name", "Componente", 150), ("version", "Versión", 200), ("status", "Estado", 620)):
+            self.inventory.heading(column, text=title)
+            self.inventory.column(column, width=width, stretch=column == "status")
+        self.inventory.pack(fill="x", pady=8)
+        shortcuts = ttk.Frame(home)
+        shortcuts.pack(fill="x")
+        self.actions = []
+        for label, callback in (("Detectar / comprobar", lambda: self.scan(False)),
+                                ("Buscar actualizaciones", lambda: self.scan(True)),
+                                ("Instalar / actualizar seleccionado", self.update_selected),
+                                ("Compilar proyecto", lambda: self.start("project")),
+                                ("Reconstruir solo SDK", lambda: self.start("sdk"))):
+            button = ttk.Button(shortcuts, text=label, command=callback)
+            button.pack(side="left", padx=3)
+            self.actions.append(button)
+        grid = ttk.Frame(settings)
         grid.pack(fill="x")
-        labels = (("msys", "MSYS2"), ("sdk", "Código de xSDK"), ("prefix", "Instalar compilador en"),
-                  ("work", "Carpeta de trabajo"), ("project", "Proyecto CMake"), ("sdl", "SDL3_DIR (opcional)"),
+        labels = (("msys", "MSYS2"), ("sdk", "Código de xSDK"), ("prefix", "Compilador instalado (carpeta raíz)"),
+                  ("work", "Carpeta de trabajo"), ("glslang", "glslang.exe instalado (opcional)"), ("project", "Proyecto CMake"), ("sdl", "SDL3_DIR (opcional)"),
                   ("build_type", "Configuración CMake"), ("cmake_args", "Opciones CMake (lista JSON)"),
                   ("target", "Prueba avanzada"), ("jobs", "Trabajos simultáneos"))
         for row, (key, label) in enumerate(labels):
@@ -64,17 +90,16 @@ class App:
             else:
                 entry = ttk.Entry(grid, textvariable=self.fields[key])
             entry.grid(row=row, column=1, sticky="ew", padx=10)
-            if key in ("msys", "sdk", "prefix", "work", "project", "sdl"):
+            if key in ("msys", "sdk", "prefix", "work", "project", "sdl", "glslang"):
                 ttk.Button(grid, text="Elegir…", command=lambda name=key: self.choose(name)).grid(row=row, column=2)
         ttk.Checkbutton(grid, text="Actualizar automáticamente al abrir (solo copias Git limpias)",
                         variable=self.fields["auto_update"], onvalue="1", offvalue="0",
                         command=self.save_preferences).grid(row=len(labels), column=1, sticky="w")
         grid.columnconfigure(1, weight=1)
-        buttons = ttk.Frame(panel)
+        buttons = ttk.Frame(advanced)
         buttons.pack(fill="x", pady=12)
-        self.actions = []
         for index, (label, action) in enumerate((("Diagnóstico", "diagnose"), ("1. Dependencias", "dependencies"),
-                ("2. Compilador", "toolchain"), ("3. Shaders", "shaders"), ("4. Construir SDK", "sdk"),
+                ("Construir compilador (lento)", "toolchain"), ("Construir shaders", "shaders"), ("4. Construir SDK", "sdk"),
                 ("5. Ejemplos", "samples"), ("Compilar proyecto", "project"), ("Verificar herramientas", "validate"),
                 ("Construir prueba avanzada", "advanced"), ("Actualizar código", "update"),
                 ("Crear paquete portable", "bundle"))):
@@ -94,8 +119,64 @@ class App:
         ttk.Label(panel, textvariable=self.status).pack(anchor="w", pady=(6, 0))
         window.protocol("WM_DELETE_WINDOW", self.close)
         window.after(100, self.poll)
+        window.after(200, lambda: self.scan(False))
         if self.fields["auto_update"].get() == "1":
-            window.after(500, lambda: self.start("update"))
+            window.after(1500, self.auto_update)
+
+    def auto_update(self):
+        if self.busy:
+            self.window.after(500, self.auto_update)
+        else:
+            self.start("update")
+
+    def scan(self, online=False):
+        if self.busy:
+            return
+        values = {key: value.get() for key, value in self.fields.items()}
+        self.busy = True
+        self.active_action = "Consultar actualizaciones" if online else "Detectar herramientas"
+        self.started_at = time.monotonic()
+        for button in self.actions:
+            button.configure(state="disabled")
+        threading.Thread(target=self.scan_worker, args=(values, online), daemon=True).start()
+
+    def scan_worker(self, values, online):
+        code = 0
+        try:
+            self.events.put(inspect(values, online))
+        except Exception as error:
+            code = 1
+            self.events.put("No se pudo inspeccionar: " + str(error) + "\n")
+        self.events.put((code, "Consulta sin compilación; vuelve a comprobar después de actualizar"))
+
+    def update_selected(self):
+        if self.busy:
+            return
+        selected = self.inventory.selection()
+        if not selected:
+            messagebox.showinfo("Componentes", "Selecciona una fila para instalar o actualizar solo ese componente")
+            return
+        key = selected[0]
+        if key in ("toolchain", "newlib", "cxx", "binutils"):
+            if not messagebox.askyesno("Actualizar compilador", "Esto reconstruye GCC y newlib y puede tardar bastante. "
+                                      "Para usar tus herramientas actuales basta con indicar su ruta. "
+                                      "¿Quieres construir un compilador nuevo sin reemplazar el existente?"):
+                return
+            destination = filedialog.asksaveasfilename(title="Carpeta NUEVA del compilador", initialfile="compiler-nuevo")
+            if not destination:
+                return
+            if Path(destination).exists():
+                messagebox.showerror("Compilador", "Elige una ruta que todavía no exista")
+                return
+            self.fields["prefix"].set(destination)
+            self.start("toolchain_fresh")
+        elif key == "shaders":
+            source = Path(self.fields["work"].get()) / "glslang/.git"
+            self.start("shaders_update" if source.exists() else "shaders")
+        elif key == "sdk":
+            self.start("update")
+        elif key == "dependencies":
+            self.start("dependencies")
 
     def save_preferences(self):
         try:
@@ -106,7 +187,8 @@ class App:
             messagebox.showerror("Preferencias", str(error))
 
     def choose(self, key):
-        folder = filedialog.askdirectory()
+        folder = (filedialog.askopenfilename(filetypes=[("Ejecutable", "*.exe")])
+                  if key == "glslang" else filedialog.askdirectory())
         if folder:
             self.fields[key].set(folder)
 
@@ -115,6 +197,9 @@ class App:
             return
         values = {key: value.get() for key, value in self.fields.items()}
         try:
+            if action in ("project", "samples", "sdk", "validate"):
+                if not (Path(values["prefix"]) / "bin/powerpc-xsdk-elf-g++.exe").is_file():
+                    raise ValueError("Indica tu compilador existente en Rutas y proyecto, o instala el componente faltante")
             args, env = plan(action=action, **values)
             if not Path(args[0]).is_file():
                 raise ValueError("Instala y actualiza MSYS2 desde https://www.msys2.org/ y elige su carpeta")
@@ -147,6 +232,8 @@ class App:
                     log.write(line)
                     log.flush()
                     self.events.put(line)
+                    if line.startswith("XSDK_NEW_ROOT="):
+                        self.events.put({"paths": {"sdk": line.strip().split("=", 1)[1]}})
                 code = self.process.wait()
         except OSError as error:
             self.events.put(str(error) + "\n")
@@ -163,9 +250,22 @@ class App:
                 item = self.events.get_nowait()
             except queue.Empty:
                 break
-            if isinstance(item, tuple):
+            if isinstance(item, dict):
+                if "rows" in item:
+                    for key in self.inventory.get_children():
+                        self.inventory.delete(key)
+                for row in item.get("rows", []):
+                    self.inventory.insert("", "end", iid=row["key"], values=(row["name"], row["version"], row["status"]))
+                for key in ("prefix", "msys", "glslang", "sdk"):
+                    if item.get("paths", {}).get(key):
+                        self.fields[key].set(item["paths"][key])
+                self.save_preferences()
+            elif isinstance(item, tuple):
                 code, log = item
                 self.status.set(("Etapa terminada" if code == 0 else f"Error/cancelación ({code})") + f" · Log: {log}")
+                if code == 0 and self.active_action in ("shaders", "shaders_update"):
+                    self.fields["glslang"].set(str(Path(self.fields["prefix"].get()) / "bin/glslang.exe"))
+                    self.save_preferences()
                 self.busy = False
                 for button in self.actions:
                     button.configure(state="normal")

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from options import BUILD_TYPES, MAKE_TARGETS, cmake_options
 
-ACTIONS = ("diagnose", "dependencies", "toolchain", "shaders", "sdk", "samples", "project", "validate", "advanced", "update", "bundle")
+ACTIONS = ("diagnose", "dependencies", "toolchain", "shaders", "sdk", "samples", "project", "validate", "advanced", "update", "bundle", "toolchain_fresh", "shaders_update")
 
 
 def msys_path(value):
@@ -17,7 +17,9 @@ def msys_path(value):
 
 
 def plan(msys, sdk, prefix, work, jobs, action, project="", build_type="Release", sdl="",
-         cmake_args="[]", target="cmake_check", auto_update="0"):
+         cmake_args="[]", target="cmake_check", auto_update="0", glslang=""):
+    if glslang:
+        msys_path(glslang)
     if build_type not in BUILD_TYPES:
         raise ValueError("Tipo de compilación desconocido")
     if target not in MAKE_TARGETS:
@@ -39,4 +41,6 @@ def plan(msys, sdk, prefix, work, jobs, action, project="", build_type="Release"
     if action == "project" and not project:
         raise ValueError("Elige un proyecto CMake")
     env = dict(os.environ, MSYSTEM="UCRT64", CHERE_INVOKING="1")
+    if glslang:
+        env["XSDK_GLSLANG_OVERRIDE"] = str(glslang)
     return args, env

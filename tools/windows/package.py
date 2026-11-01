@@ -6,13 +6,15 @@ import zipfile
 from pathlib import Path
 
 from check_tools import check
+from manager import load_state
 
 
 def package(sdk, prefix, output):
     sdk, prefix, output = Path(sdk), Path(prefix), Path(output)
     check(prefix)
     work = output.parent
-    archives = sorted((work / "toolchain/src").glob("*.tar.*"))
+    source_work = Path(load_state(work).get("toolchain", {}).get("source_work") or work / "toolchain")
+    archives = sorted((source_work / "src").glob("*.tar.*"))
     if len(archives) < 3 or not (work / "glslang/CMakeLists.txt").is_file():
         raise ValueError("Conserva las fuentes del toolchain y glslang en la carpeta de trabajo para distribuirlas")
     if not (prefix / "bin/glslang.exe").is_file():

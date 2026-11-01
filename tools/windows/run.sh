@@ -15,6 +15,15 @@ for path in "$sdk" "$prefix" "$work"; do
 done
 cd "$sdk"
 export PATH="$prefix/bin:/ucrt64/bin:/usr/bin:$PATH"
+if [[ -n "${XSDK_GLSLANG_OVERRIDE:-}" ]]; then
+	shader_path=$(cygpath -u "$XSDK_GLSLANG_OVERRIDE")
+	export PATH="$(dirname "$shader_path"):$PATH"
+	if [[ "$action" == project ]]; then extra+=("-DXSDK_GLSLANG=$(cygpath -m "$shader_path")"); fi
+fi
+if [[ "$action" == shaders_update ]]; then
+	python3 tools/windows/update.py "$work/glslang" shaders
+	action=shaders
+fi
 case "$action" in
 	dependencies)
 		pacman -S --needed --noconfirm base-devel texinfo git curl patch tar xz \
@@ -23,8 +32,13 @@ case "$action" in
 			mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-cmake \
 			mingw-w64-ucrt-x86_64-ninja
 		;;
-	toolchain)
-		PREFIX="$prefix" WORK="$work/toolchain" JOBS="$jobs" bash tools/toolchain/build.sh
+	toolchain|toolchain_fresh)
+		toolchain_work="$work/toolchain"
+		if [[ "$action" == toolchain_fresh ]]; then
+			[[ ! -e "$prefix" ]] || { echo 'Choose a new compiler folder; the existing tools will be kept' >&2; exit 1; }
+			toolchain_work="$work/toolchain-updates/$(date +%Y%m%d-%H%M%S)"
+		fi
+		PREFIX="$prefix" WORK="$toolchain_work" JOBS="$jobs" bash tools/toolchain/build.sh
 		python3 tools/windows/check_tools.py "$prefix"
 		;;
 	shaders)
@@ -62,7 +76,7 @@ case "$action" in
 		python3 tools/windows/advanced.py "$target" "$prefix" "$jobs" "$build_type" "${sdl:+$(cygpath -m "$sdl")}"
 		;;
 	update)
-		python3 tools/windows/update.py "$sdk"
+		python3 tools/windows/update.py "$sdk" sdk "$work/sdk-updates"
 		;;
 	bundle)
 		python3 tools/windows/package.py "$sdk" "$prefix" "$work/xsdk-windows-portable.zip"
@@ -84,5 +98,9 @@ case "$action" in
 		python3 tools/windows/check_tools.py "$prefix"
 		;;
 	*) echo "Unknown action: $action" >&2; exit 1 ;;
+esac
+case "$action" in
+	toolchain|toolchain_fresh) python3 tools/windows/manager.py mark "$sdk" "$prefix" "$work" toolchain "$toolchain_work" ;;
+	shaders|sdk) python3 tools/windows/manager.py mark "$sdk" "$prefix" "$work" "$action" ;;
 esac
 echo "Completed: $action"
