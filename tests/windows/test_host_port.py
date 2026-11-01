@@ -81,8 +81,13 @@ class BuildPlanTests(unittest.TestCase):
         script = str(ROOT / "tools/toolchain/build.sh")
         for system, expected in (("", False), ("UCRT64", True)):
             env = dict(os.environ, MSYSTEM=system, PREFIX="/tmp/xsdk-native-compiler", WORK="/tmp/xsdk-native-work")
-            result = subprocess.run(["bash", script, "--print-config"], env=env, check=True,
-                                    text=True, stdout=subprocess.PIPE)
+            result = subprocess.run(["bash", script, "--print-config"], env=env, check=False,
+                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if os.name == "nt" and not system:
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Open the MSYS2 UCRT64 environment", result.stderr)
+                continue
+            self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual("--host=x86_64-w64-mingw32" in result.stdout, expected)
             self.assertIn("--target=powerpc-xsdk-elf", result.stdout)
 
