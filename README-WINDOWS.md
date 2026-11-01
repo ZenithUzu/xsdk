@@ -170,3 +170,44 @@ Para comprobar la transición: recompila SDK y ejemplos, prueba `hello.xex` y `t
 repite el arranque. Ejecuta también `xsdk_test.xex` y conserva su log. Anota si la estática aparece antes del logo,
 durante el cambio a la aplicación o después de pulsar Back; estos momentos corresponden a transiciones distintas.
 No hace falta reconstruir GCC para estos cambios.
+
+## Opciones de la interfaz
+
+- **Configuración CMake:** Debug, Release, RelWithDebInfo o MinSizeRel para proyectos y ejemplos.
+  El SDK construido con Make conserva sus opciones originales de compilación.
+- **SDL3_DIR:** selecciona la carpeta que contiene `SDL3Config.cmake` de tu construcción SDL-xenon.
+  Se transmite a proyectos y ejemplos. No descarga ni construye SDL3 automáticamente.
+- **Opciones CMake:** lista JSON de opciones `-D`, por ejemplo `["-DFEATURE=ON", "-DNAME=mi proyecto"]`.
+  Se pasan como argumentos separados al configurar un proyecto. Las rutas de toolchain y configuración
+  se eligen con los campos propios, para no reemplazarlas por accidente.
+- **Prueba avanzada:** elige un objetivo original y pulsa **Construir prueba avanzada**.
+  Los objetivos con `break` generan variantes rotas a propósito: sus comprobaciones deben fallar en consola.
+  Los XEX de las otras pruebas también requieren ejecución real; construirlos no los declara aprobados.
+- **Actualizar código:** actualiza el fork por Git con `--ff-only`. Se niega a sobrescribir cambios locales,
+  archivos sin seguimiento u otros repositorios. La casilla de actualización al abrir es opcional y viene apagada.
+  Reinicia la interfaz después de actualizar. Las copias ZIP requieren una nueva instalación Git para esta función.
+
+## Instalador y herramientas portables
+
+`Instalar-Windows.ps1` instala una copia Git en una carpeta nueva; requiere MSYS2 actualizado y Python con tkinter.
+Desde PowerShell, en la carpeta del código, ejecuta:
+
+```powershell
+powershell -File .\Instalar-Windows.ps1 -Destination C:\xsdk-instalado
+```
+
+Con herramientas construidas, **Crear paquete portable** genera `xsdk-windows-portable.zip` y su `.sha256`
+en la carpeta de trabajo. Incluye el compilador, glslang, código del SDK, fuentes correspondientes y avisos;
+se niega a empaquetar si faltan herramientas o fuentes. Requiere una copia Git del SDK. Sigue requiriendo MSYS2 UCRT64 para las dependencias host.
+Se puede instalar ese compilador con `-Bundle C:\ruta\xsdk-windows-portable.zip`, conservando su checksum al lado.
+El instalador no reemplaza carpetas existentes y comprueba el checksum antes de extraer las herramientas.
+Después configura el compilador en la interfaz y construye el SDK y tu proyecto.
+
+En GitHub Actions, el flujo **Windows host tools (experimental)** permite activar manualmente `build_native`.
+También se solicita en `main` mediante un commit con `[native-bundle]` en su mensaje.
+Construye toolchain, shaders, SDK, ejemplos y comprobaciones antes de subir el ZIP y checksum como artefactos.
+Es una construcción larga; si falla, conserva los logs. Esto prepara la generación de binarios precompilados,
+pero no significa que ya exista un paquete aprobado: hay que completar ese flujo en Windows.
+No es todavía un instalador autónomo que incluya Python y MSYS2.
+
+La estática sigue pendiente de validación en Xbox; ninguna opción de interfaz sustituye esa comprobación.

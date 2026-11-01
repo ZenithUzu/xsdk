@@ -3,7 +3,9 @@ import os
 import re
 from pathlib import Path
 
-ACTIONS = ("diagnose", "dependencies", "toolchain", "shaders", "sdk", "samples", "project", "validate")
+from options import BUILD_TYPES, MAKE_TARGETS, cmake_options
+
+ACTIONS = ("diagnose", "dependencies", "toolchain", "shaders", "sdk", "samples", "project", "validate", "advanced", "update", "bundle")
 
 
 def msys_path(value):
@@ -14,7 +16,13 @@ def msys_path(value):
     return "/" + match[1].lower() + "/" + match[2]
 
 
-def plan(msys, sdk, prefix, work, jobs, action, project=""):
+def plan(msys, sdk, prefix, work, jobs, action, project="", build_type="Release", sdl="",
+         cmake_args="[]", target="cmake_check", auto_update="0"):
+    if build_type not in BUILD_TYPES:
+        raise ValueError("Tipo de compilación desconocido")
+    if target not in MAKE_TARGETS:
+        raise ValueError("Prueba avanzada desconocida")
+    extra = cmake_options(cmake_args)
     if action not in ACTIONS:
         raise ValueError("Acción desconocida")
     if not 1 <= int(jobs) <= 64:
@@ -26,7 +34,9 @@ def plan(msys, sdk, prefix, work, jobs, action, project=""):
     script = msys_path(sdk) + "/tools/windows/run.sh"
     args = [str(bash), "--login", script, action, msys_path(sdk), msys_path(prefix),
             msys_path(work), str(int(jobs))]
-    if action == "project":
-        args.append(msys_path(project))
+    args.extend([msys_path(project) if project else "", build_type, msys_path(sdl) if sdl else "", target])
+    args.extend(extra)
+    if action == "project" and not project:
+        raise ValueError("Elige un proyecto CMake")
     env = dict(os.environ, MSYSTEM="UCRT64", CHERE_INVOKING="1")
     return args, env

@@ -131,10 +131,11 @@ cmake_check_break: $(BUILD)/libxsdk.a $(HOST_XSC_LIBRARY)
 # SDL3_DIR names SDL-xenon's build. sample_breaks builds each one broken on purpose, into build/samples/<sample>_brk.
 SAMPLES := hello triangle cube sound sdl3 template
 SAMPLE_BREAKS := hello triangle cube sound sdl3
+SAMPLE_BUILD_TYPE ?= RelWithDebInfo
 SDL3_DIR ?=
 # Only sdl3 reads SDL3_DIR, so the others aren't to warn that they don't.
-sample_build = $(call cmake_configure,samples/$(1),$(BUILD)/samples/$(2)) -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-	--no-warn-unused-cli $(if $(SDL3_DIR),-DSDL3_DIR=$(SDL3_DIR)) $(3) && cmake --build $(BUILD)/samples/$(2)
+sample_build = $(call cmake_configure,samples/$(1),$(BUILD)/samples/$(2)) -DCMAKE_BUILD_TYPE=$(SAMPLE_BUILD_TYPE) \
+	--no-warn-unused-cli $(if $(SDL3_DIR),"-DSDL3_DIR=$(SDL3_DIR)") $(3) && cmake --build $(BUILD)/samples/$(2)
 
 samples: $(BUILD)/libxsdk.a $(HOST_XSC_LIBRARY)
 	for sample in $(SAMPLES); do $(call sample_build,$$sample,$$sample) || exit 1; done

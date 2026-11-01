@@ -10,6 +10,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from build_plan import plan
+from options import BUILD_TYPES, MAKE_TARGETS
 
 ROOT = Path(__file__).resolve().parents[2]
 CREDITS = """xSDK original: Mena / xenosworks — MIT
@@ -33,7 +34,8 @@ class App:
         self.folder = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "xsdk-windows"
         self.settings_path = self.folder / "settings.json"
         defaults = {"msys": "C:/msys64", "sdk": str(ROOT),
-                    "prefix": "C:/xsdk-tools/compiler", "work": "C:/xsdk-tools/work", "project": "", "jobs": "4"}
+                    "prefix": "C:/xsdk-tools/compiler", "work": "C:/xsdk-tools/work", "project": "", "jobs": "4",
+                    "sdl": "", "build_type": "Release", "cmake_args": "[]", "target": "cmake_check", "auto_update": "0"}
         try:
             saved = json.loads(self.settings_path.read_text(encoding="utf-8"))
             defaults.update({key: str(value) for key, value in saved.items() if key in defaults})
@@ -42,7 +44,7 @@ class App:
         self.fields = {name: tk.StringVar(value=value) for name, value in defaults.items()}
         self.status = tk.StringVar(value="Port experimental — aún requiere validación completa en Windows")
         window.title("xSDK para Windows — experimental")
-        window.geometry("1020x700")
+        window.geometry("1100x900")
         panel = ttk.Frame(window, padding=14)
         panel.pack(fill="both", expand=True)
         ttk.Label(panel, text="xSDK · Windows", font=("Segoe UI", 20, "bold")).pack(anchor="w")
@@ -51,23 +53,35 @@ class App:
         grid = ttk.Frame(panel)
         grid.pack(fill="x")
         labels = (("msys", "MSYS2"), ("sdk", "Código de xSDK"), ("prefix", "Instalar compilador en"),
-                  ("work", "Carpeta de trabajo"), ("project", "Proyecto CMake"), ("jobs", "Trabajos simultáneos"))
+                  ("work", "Carpeta de trabajo"), ("project", "Proyecto CMake"), ("sdl", "SDL3_DIR (opcional)"),
+                  ("build_type", "Configuración CMake"), ("cmake_args", "Opciones CMake (lista JSON)"),
+                  ("target", "Prueba avanzada"), ("jobs", "Trabajos simultáneos"))
         for row, (key, label) in enumerate(labels):
             ttk.Label(grid, text=label).grid(row=row, column=0, sticky="w", pady=3)
-            ttk.Entry(grid, textvariable=self.fields[key]).grid(row=row, column=1, sticky="ew", padx=10)
-            if key != "jobs":
+            if key in ("build_type", "target"):
+                choices = BUILD_TYPES if key == "build_type" else MAKE_TARGETS
+                entry = ttk.Combobox(grid, textvariable=self.fields[key], values=choices, state="readonly")
+            else:
+                entry = ttk.Entry(grid, textvariable=self.fields[key])
+            entry.grid(row=row, column=1, sticky="ew", padx=10)
+            if key in ("msys", "sdk", "prefix", "work", "project", "sdl"):
                 ttk.Button(grid, text="Elegir…", command=lambda name=key: self.choose(name)).grid(row=row, column=2)
+        ttk.Checkbutton(grid, text="Actualizar automáticamente al abrir (solo copias Git limpias)",
+                        variable=self.fields["auto_update"], onvalue="1", offvalue="0",
+                        command=self.save_preferences).grid(row=len(labels), column=1, sticky="w")
         grid.columnconfigure(1, weight=1)
         buttons = ttk.Frame(panel)
         buttons.pack(fill="x", pady=12)
         self.actions = []
         for index, (label, action) in enumerate((("Diagnóstico", "diagnose"), ("1. Dependencias", "dependencies"),
                 ("2. Compilador", "toolchain"), ("3. Shaders", "shaders"), ("4. Construir SDK", "sdk"),
-                ("5. Ejemplos", "samples"), ("Compilar proyecto", "project"), ("Verificar herramientas", "validate"))):
+                ("5. Ejemplos", "samples"), ("Compilar proyecto", "project"), ("Verificar herramientas", "validate"),
+                ("Construir prueba avanzada", "advanced"), ("Actualizar código", "update"),
+                ("Crear paquete portable", "bundle"))):
             button = ttk.Button(buttons, text=label, command=lambda name=action: self.start(name))
             button.grid(row=index // 4, column=index % 4, padx=3, pady=3, sticky="ew")
             self.actions.append(button)
-        ttk.Button(buttons, text="Cancelar", command=self.cancel).grid(row=2, column=3, padx=3)
+        ttk.Button(buttons, text="Cancelar", command=self.cancel).grid(row=3, column=3, padx=3)
         for column in range(4):
             buttons.columnconfigure(column, weight=1)
         self.output = tk.Text(panel, wrap="word", font=("Consolas", 10), state="disabled")
@@ -80,6 +94,16 @@ class App:
         ttk.Label(panel, textvariable=self.status).pack(anchor="w", pady=(6, 0))
         window.protocol("WM_DELETE_WINDOW", self.close)
         window.after(100, self.poll)
+        if self.fields["auto_update"].get() == "1":
+            window.after(500, lambda: self.start("update"))
+
+    def save_preferences(self):
+        try:
+            self.folder.mkdir(parents=True, exist_ok=True)
+            values = {key: value.get() for key, value in self.fields.items()}
+            self.settings_path.write_text(json.dumps(values, indent=2), encoding="utf-8")
+        except OSError as error:
+            messagebox.showerror("Preferencias", str(error))
 
     def choose(self, key):
         folder = filedialog.askdirectory()

@@ -4,6 +4,11 @@ on:
     branches: [main, windows-native]
   pull_request:
   workflow_dispatch:
+    inputs:
+      build_native:
+        description: Construir toolchain y paquete portable (puede tardar horas)
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -19,6 +24,14 @@ jobs:
             make git
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-python
+      - name: Parse PowerShell installer
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            "$pwd/Instalar-Windows.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count) { $errors | Out-String | Write-Error; exit 1 }
       - name: Build real native host DLL
         shell: msys2 {0}
         run: make -j2 build/host/libxsc.dll HOST_CC=gcc PYTHON=python3
@@ -37,3 +50,42 @@ jobs:
           make display_host_check
           python3 -m unittest discover -s tests/windows -v
           bash -n tools/windows/run.sh tools/toolchain/build.sh
+
+  native-bundle:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.build_native) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+       contains(github.event.head_commit.message, '[native-bundle]'))
+    runs-on: windows-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            base-devel texinfo git curl patch tar xz
+            mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gmp
+            mingw-w64-ucrt-x86_64-mpfr mingw-w64-ucrt-x86_64-mpc
+            mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+      - name: Bootstrap native compiler, shaders and SDK
+        shell: msys2 {0}
+        run: |
+          for action in toolchain shaders sdk samples validate bundle; do
+            bash tools/windows/run.sh "$action" "$PWD" /c/xsdk-tools/compiler /c/xsdk-tools/work 4
+          done
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: xsdk-windows-portable-with-sources
+          path: |
+            C:/xsdk-tools/work/xsdk-windows-portable.zip
+            C:/xsdk-tools/work/xsdk-windows-portable.zip.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: xsdk-native-bootstrap-logs
+          path: C:/xsdk-tools/work/toolchain/logs

@@ -23,7 +23,7 @@ class BuildPlanTests(unittest.TestCase):
     def test_project_is_not_shell_code(self):
         project = "C:/projects/has space;$(whoami)"
         args, _ = plan("C:/msys64", "C:/sdk", "C:/compiler", "C:/work", 2, "project", project)
-        self.assertEqual(args[-1], "/c/projects/has space;$(whoami)")
+        self.assertEqual(args[8], "/c/projects/has space;$(whoami)")
         self.assertNotIn("-c", args)
 
     def test_reject_bad_environment(self):

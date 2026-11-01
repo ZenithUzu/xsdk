@@ -23,6 +23,9 @@ La [guía completa](README-WINDOWS.md) explica las rutas, requisitos, actualizac
 **Abrir resultados** muestra `build`, con los ejemplos y títulos de prueba.
 **Verificar herramientas** comprueba los binarios de Windows, C++23 y la integración CMake/HLSL.
 **Abrir logs** permite consultar los registros cuando una construcción tarda o falla.
+También incluye pruebas avanzadas, SDL3_DIR, configuraciones Debug/Release, opciones CMake,
+actualización Git opcional al abrir, un instalador PowerShell y generación de paquetes portables con fuentes.
+Consulta [cómo usar estas opciones](README-WINDOWS.md#opciones-de-la-interfaz).
 
 ## Qué se conserva y qué añade el fork
 
