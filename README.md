@@ -137,6 +137,6 @@ El paquete precompilado es una vía opcional de instalación; no se da por dispo
 - [Licencia MIT](LICENSE) y [avisos de terceros](THIRD_PARTY_NOTICES.md)
 
 **xSDK original:** Mena / xenosworks y colaboradores. Se conservan sus créditos y los de Xenia, libxenon y demás
-proyectos originales. **Adaptación de Windows:** Axel, con asistencia de OpenAI Codex.
+proyectos originales. **Adaptación de Windows:** ZenithUzu, con asistencia de OpenAI Codex.
 GCC, binutils, newlib, glslang y MSYS2 conservan sus propias licencias. Este fork no es una publicación oficial
 de xenosworks ni de Microsoft. Los resultados históricos del SDK original no validan automáticamente los cambios del fork.
