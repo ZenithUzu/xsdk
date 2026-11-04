@@ -94,6 +94,10 @@ Esto construye las herramientas desde sus fuentes y puede tardar bastante. **Sol
 El [instalador PowerShell](Instalar-Windows.ps1) también puede preparar una copia Git en una carpeta nueva;
 no instala Python/MSYS2 ni convierte la interfaz en una aplicación autónoma con todo incluido.
 
+## Integración del original
+
+Este fork integra [upstream `5f6dc72`](https://github.com/xenosworks/xsdk/commit/5f6dc726f65f6d171493a3628c2415c03551f27b): 26 commits posteriores a la base `8c58c7a`, con nuevas funciones POSIX de archivos, memoria, tiempos, pthreads e información de interfaces. Las [notas de integración](docs/WINDOWS-UPSTREAM.md) separan la compilación en Windows de las pruebas de consola del autor original. El hito de USB Ethernet es un documento de alcance, todavía no un controlador funcional.
+
 ## Actualizaciones y mejoras
 
 | Qué cambió | Acción habitual |

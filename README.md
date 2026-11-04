@@ -95,6 +95,10 @@ After a successful build, set **SDL3_DIR** to `C:/SDL-xenon/build-xsdk`. It shou
 
 SDL-xenon provides audio, controllers, threads and timers. This adaptation does not supply an Xbox video/render driver; projects provide their graphics backend. Selecting SDL3_DIR does not add SDL calls to a project's source. See the [Windows guide](README-WINDOWS.md#sdl3-opcional) and [SDL-xenon documentation](https://github.com/xenosworks/SDL-xenon/blob/xenon/docs/README-xsdk.md).
 
+## Upstream integration
+
+This Windows fork integrates [upstream `5f6dc72`](https://github.com/xenosworks/xsdk/commit/5f6dc726f65f6d171493a3628c2415c03551f27b), including 26 commits after its original `8c58c7a` base. New POSIX support covers files, memory, clocks, pthreads and interface information. [Integration notes](docs/WINDOWS-UPSTREAM.md) distinguish compiled Windows checks from the original author's console results. The USB Ethernet milestone is a scope document, not a working adapter driver.
+
 ## Updates
 
 | Changed component | Next step |

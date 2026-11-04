@@ -95,6 +95,10 @@ Depois de compilar com sucesso, coloque `C:/SDL-xenon/build-xsdk` em **SDL3_DIR*
 
 SDL-xenon fornece áudio, controles, threads e temporizadores. Essa adaptação não fornece um driver próprio de vídeo/render para Xbox; cada projeto usa seu backend gráfico. Preencher SDL3_DIR não adiciona chamadas SDL ao código do projeto. Consulte o [manual do Windows](README-WINDOWS.md#sdl3-opcional) e a [documentação SDL-xenon](https://github.com/xenosworks/SDL-xenon/blob/xenon/docs/README-xsdk.md).
 
+## Integração do upstream
+
+Este fork integra [upstream `5f6dc72`](https://github.com/xenosworks/xsdk/commit/5f6dc726f65f6d171493a3628c2415c03551f27b): 26 commits após a base `8c58c7a`, com funções POSIX de arquivos, memória, relógios, pthreads e informações de interfaces. As [notas de integração](docs/WINDOWS-UPSTREAM.md) separam a compilação no Windows dos testes no console do autor original. O marco USB Ethernet é um documento de escopo, ainda não um driver funcional.
+
 ## Atualizações
 
 | Componente alterado | Próximo passo |
