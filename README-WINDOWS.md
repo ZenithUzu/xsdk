@@ -288,7 +288,7 @@ ya instaladas y no se considera aprobado hasta que la construcción y validació
 
 ## Estado y créditos
 
-El [README principal](README.md#estado-y-límites) registra los resultados conocidos y las limitaciones.
+El [README en español](README-ES.md#estado-y-límites) registra los resultados conocidos y las limitaciones.
 La apertura de la interfaz y la DLL pasaron en Windows; la suite registrada sigue fallando en la prueba de configuración
 del toolchain. La estática reportada en Xbox sigue pendiente de reproducción/validación. Las comprobaciones host no
 certifican la temporización del display ni todas las funciones de consola.

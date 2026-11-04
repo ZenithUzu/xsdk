@@ -2,145 +2,124 @@
   <img src="assets/xsdk.png" alt="xSDK" width="640">
 </div>
 
-# xSDK para Windows
+<p align="center">
+  <a href="README.md"><img src="assets/languages/english.svg" alt="Read in English" width="140" height="36"></a>
+  <a href="README-ES.md"><img src="assets/languages/espanol.svg" alt="Leer en español" width="140" height="36"></a>
+  <a href="README-PT.md"><img src="assets/languages/portugues.svg" alt="Ler em português" width="140" height="36"></a>
+</p>
 
-Herramienta con interfaz en **inglés, español y portugués** para **detectar, administrar y reutilizar tus herramientas de xSDK** y
-compilar proyectos `.xex` para Xbox 360 desde Windows, mediante MSYS2 UCRT64. La rama de uso es **`main`**.
+# xSDK for Windows
 
-Fork de [xenosworks/xsdk](https://github.com/xenosworks/xsdk), creado por **Mena / xenosworks y colaboradores**.
-Se conservan el SDK original, su documentación, ejemplos, licencias y créditos. La base original es `8c58c7a`.
+**Build Xbox 360 homebrew from Windows. Manage your tools, compile shaders and turn compatible C/C++ projects into `.xex` titles with a desktop interface.**
 
-[Descargar main en ZIP](https://github.com/ZenithUzu/xsdk/archive/refs/heads/main.zip) ·
-[Instalación y uso completos](README-WINDOWS.md) ·
-[README original](README-UPSTREAM.md) ·
-[Estado de las construcciones](https://github.com/ZenithUzu/xsdk/actions)
+This experimental Windows fork of [xenosworks/xsdk](https://github.com/xenosworks/xsdk) uses **MSYS2 UCRT64**. The interface supports **English, Spanish and Portuguese**. Use the **`main`** branch.
 
-[Recetas de proyectos y guía EN / ES / PT](README-PROJECTS.md)
+[Download ZIP](https://github.com/ZenithUzu/xsdk/archive/refs/heads/main.zip) · [Windows manual — Spanish](README-WINDOWS.md) · [Port recipes — EN / ES / PT](README-PROJECTS.md) · [Original README](README-UPSTREAM.md) · [Build status](https://github.com/ZenithUzu/xsdk/actions)
 
-## Qué hace la herramienta
+## Features
 
-- Detecta instalaciones en las rutas guardadas, ubicaciones habituales, `XSDK_TOOLCHAIN` y PATH.
-- Permite indicar manualmente las rutas de MSYS2, compilador, xSDK y un `glslang.exe` separado.
-- Muestra las versiones de GCC/C++, binutils, newlib y glslang, y el estado de las dependencias y bibliotecas.
-- Compila proyectos y ejemplos reutilizando las herramientas elegidas.
-- Reconoce recetas `xsdk-project.json`: comprobación previa, ROM local opcional y construcción del port en Release.
-- Guarda idioma y rutas; conserva los logs originales del compilador.
-- Consulta actualizaciones del código del SDK y de glslang-xenon, sin instalarlas al consultar.
-- Actualiza componentes por separado; una actualización del compilador se construye en una carpeta nueva.
-- Ofrece Debug, Release, RelWithDebInfo, MinSizeRel, opciones CMake y SDL3_DIR opcional.
-- Conserva el acceso a pruebas avanzadas del SDK, logs, cancelación y resultados de construcción.
-- Incluye un instalador PowerShell y un generador de paquetes portables con fuentes, licencias y SHA-256.
+- Detect and reuse installed tools instead of rebuilding the compiler for every project.
+- Inspect GCC/G++, binutils, newlib, shader tools and SDK libraries from one window.
+- Set custom paths for MSYS2, the PowerPC compiler, xSDK, glslang and SDL3 Xenon.
+- Build compatible CMake projects, SDK examples and ports with `xsdk-project.json` recipes.
+- Check recipe prerequisites before building; keep your ROM and assets as local private inputs.
+- Choose Release, Debug, RelWithDebInfo or MinSizeRel and control parallel jobs.
+- Switch between English, Spanish and Portuguese; keep your language and paths saved.
+- Read live compiler logs, cancel tasks and open build outputs.
+- Check for updates and update individual components. Automatic source updates are optional and off by default.
+- Build portable tool packages with corresponding sources, licenses and SHA-256 checksums.
 
-**Al abrir, detecta y comprueba; no reconstruye GCC, newlib ni shaders.** La actualización automática del código
-es opcional y viene desactivada. No necesitas esperar un paquete precompilado para usar tus herramientas actuales.
+Opening the interface scans your tools. It does not automatically rebuild GCC, newlib or shaders. A detected version does not prove that a tool contains the required Xenon patches.
 
-## Componentes necesarios
+## Requirements
 
-| Componente | Para qué sirve | Cuándo se necesita |
-|---|---|---|
-| Windows 10/11 de 64 bits | Sistema host del port | Para usar la interfaz de Windows |
-| Python 3.11 o posterior con tkinter | Ejecuta la interfaz mediante `py`; el lanzador también admite Python UCRT64 en la ruta predeterminada | Siempre para la interfaz |
-| MSYS2 UCRT64 | Entorno de construcción nativo de Windows | Para ejecutar las tareas de construcción |
-| GCC/G++ `powerpc-xsdk-elf`, binutils y newlib de xSDK | Compilan C/C++ para Xbox 360 | Para construir SDK y proyectos |
-| glslang-xenon para Windows | Prepara los shaders | Para proyectos o pruebas que compilan shaders |
-| Código y bibliotecas de xSDK | Runtime y acceso al sistema/GPU de la consola | Para enlazar los proyectos |
-| SDL-xenon | SDL3 adaptado a xSDK | Solo si el proyecto lo utiliza |
+| Component | Purpose |
+| --- | --- |
+| 64-bit Windows 10/11 | Host system |
+| Python 3.11+ with tkinter | Desktop interface; use the `py` launcher or the default UCRT64 Python fallback |
+| MSYS2 UCRT64 | Host tools and build environment |
+| xSDK PowerPC GCC/G++, binutils and newlib | Compile and link Xbox 360 code |
+| glslang-xenon and built xSDK libraries | Shader compilation and runtime |
+| Built SDL3 Xenon | Only for projects that use SDL3 |
 
-La receta incluida usa **GCC 15.3.0, binutils 2.47 y newlib 4.6.0.20260123**, con los parches originales de xSDK.
-Un GCC PowerPC genérico o SDL para PC no sustituyen esas versiones adaptadas.
-MSYS2 aporta Make, CMake, Ninja, Git, Python host y las dependencias para construir las herramientas.
-No se requiere Debian/WSL, VS2010 ni el SDK de Microsoft.
+The toolchain recipe uses GCC 15.3.0, binutils 2.47 and newlib 4.6.0.20260123 with the xSDK patches. Generic PowerPC GCC and desktop SDL are not replacements. This Windows workflow does not require Debian/WSL, VS2010 or Microsoft XDK.
 
-## Si ya tienes las herramientas
+## Installation
 
-1. Descarga `main` y extrae el código, por ejemplo en `C:\xsdk-windows`. Conserva `C:\xsdk-tools`.
-2. Abre **Iniciar-Windows.cmd** y entra en **Mis herramientas**.
-3. Pulsa **Detectar / comprobar**. Si falta una ruta, indícala en **Rutas y proyecto**.
-4. Si acabas de actualizar el código de xSDK, pulsa **Reconstruir solo SDK**.
-5. Selecciona la carpeta CMake de tu proyecto y pulsa **Compilar proyecto**.
+### Already have the tools?
 
-Valores habituales:
+1. Download `main` into a path without spaces, such as `C:\xsdk-windows`. Keep your existing compiler and work folders.
+2. Open **Iniciar-Windows.cmd** and select **English** at the top.
+3. Use **Detect / check**. Set missing paths under **Paths and project**.
+4. If you updated the SDK runtime sources, use **Rebuild SDK only**, then rebuild your project.
+5. Choose your project, select **Release** for performance comparisons and use **Build project**.
 
-| Campo | Ejemplo |
-|---|---|
+### Starting from scratch
+
+1. Install [Python](https://www.python.org/downloads/windows/) with tkinter and the `py` launcher.
+2. Install [MSYS2](https://www.msys2.org/), open **UCRT64** and run `pacman -Syu`. Restart the terminal and repeat if requested.
+3. Download or clone this repository into a path without spaces. Open **Iniciar-Windows.cmd**.
+4. Under **Installation and advanced tests**, run these stages one at a time: **Dependencies → Build compiler → Build shader tools → Build SDK → Samples**.
+5. Wait for each stage to succeed before starting the next. Build SDL3 separately if your project needs it.
+
+Compiler construction can take a long time; skip it if you already have compatible tools. [Instalar-Windows.ps1](Instalar-Windows.ps1) can prepare a Git checkout in a new directory; it does not install Python or MSYS2.
+
+## Usage
+
+| Field | Typical value |
+| --- | --- |
 | MSYS2 | `C:/msys64` |
-| Código de xSDK | `C:/xsdk-windows` |
-| Compilador instalado, carpeta raíz | `C:/xsdk-tools/compiler` |
-| Carpeta de trabajo | `C:/xsdk-tools/work` |
-| glslang.exe instalado | `C:/xsdk-tools/compiler/bin/glslang.exe` |
-| Proyecto CMake | Carpeta del proyecto que contiene `CMakeLists.txt` compatible con xSDK |
-| SDL3_DIR | Vacío, o `C:/SDL-xenon/build-xsdk` si ya lo construiste y lo necesitas |
+| xSDK source | `C:/xsdk-windows` |
+| Installed compiler root | `C:/xsdk-tools/compiler` |
+| Work folder | `C:/xsdk-tools/work` |
+| glslang executable | `C:/xsdk-tools/compiler/bin/glslang.exe` |
+| SDL3_DIR | `C:/SDL-xenon/build-xsdk`, if needed |
 
-Para xDS360, el proyecto de este port se selecciona en su carpeta **`platform/xsdk`**.
-Usa **Release**, opciones **`[]`** y **4 trabajos** como punto de partida.
+For a **generic CMake project**, select the directory containing its compatible `CMakeLists.txt`. Start with Release, extra CMake options `[]` and four jobs.
 
-## Instalación desde cero
+For **CoopDX360**, select the **repository root** containing `xsdk-project.json`. Select the SDL3 Xenon build and optionally your private US ROM, use **Check port recipe**, then **Build project**. Inherited-input restoration is explicit and off by default; use it only with permission to use those inputs. Follow the [recipe guide](README-PROJECTS.md) for private-input preparation and details.
 
-1. Instala [Python para Windows](https://www.python.org/downloads/windows/) con tkinter y el lanzador `py`.
-2. Instala [MSYS2](https://www.msys2.org/) y actualízalo con `pacman -Syu` desde **UCRT64**.
-   Si solicita reiniciar la terminal, hazlo y repite la actualización.
-3. Descarga el código de `main` en una ruta sin espacios y abre **Iniciar-Windows.cmd**.
-4. En **Instalación y pruebas avanzadas**, ejecuta en orden:
-   **Dependencias → Construir compilador (lento) → Construir shaders → Construir SDK → Ejemplos**.
-5. Espera a que cada etapa termine correctamente antes de continuar.
+Recipe outputs go to `<work>/projects/<repository-name>/`. **Open results** opens that folder; generic projects and SDK examples use the SDK build directory. The CoopDX recipe generates a local `build-info.json` with configuration, source revision and output hashes. No console transfer or launch happens automatically.
 
-Esto construye las herramientas desde sus fuentes y puede tardar bastante. **Solo es necesario si no las tienes**.
-El [instalador PowerShell](Instalar-Windows.ps1) también puede preparar una copia Git en una carpeta nueva;
-no instala Python/MSYS2 ni convierte la interfaz en una aplicación autónoma con todo incluido.
+## Build SDL3 Xenon
 
-## Actualizaciones y mejoras
+Build xSDK first. Open **MSYS2 UCRT64**, adjust the paths and clone into a new directory:
 
-| Qué cambió | Acción habitual |
-|---|---|
-| Solo la interfaz o su documentación | Actualizar código y reiniciar la interfaz |
-| Código del runtime/GPU de xSDK | Actualizar código, reconstruir solo SDK y recompilar el proyecto |
-| Tu proyecto | Compilar proyecto |
-| glslang-xenon | Actualizar/construir shaders y reconstruir los proyectos afectados |
-| GCC, binutils, newlib o sus parches | Revisar y construir el compilador nuevo; es una tarea larga y explícita |
+```bash
+git clone --branch xenon https://github.com/xenosworks/SDL-xenon.git /c/SDL-xenon
+cmake -S C:/SDL-xenon -B C:/SDL-xenon/build-xsdk -G Ninja -DCMAKE_TOOLCHAIN_FILE=C:/xsdk-windows/cmake/xsdk.cmake -DXSDK_TOOLCHAIN=C:/xsdk-tools/compiler -DCMAKE_BUILD_TYPE=Release
+cmake --build C:/SDL-xenon/build-xsdk --parallel 4
+```
 
-**“Sin registro” no significa “desactualizado”.** La interfaz no puede certificar los parches de instalaciones
-anteriores que no tengan metadatos. Encontrar una versión tampoco certifica que toda la compilación funcione.
+After a successful build, set **SDL3_DIR** to `C:/SDL-xenon/build-xsdk`. It should contain `SDL3Config.cmake`. Use the Xbox-targeted SDL3 build, not desktop SDL3.
 
-Las mejoras de este fork incluyen rutas y herramientas host para Windows, `libxsc.dll`, diagnósticos de bootstrap,
-una interfaz que procesa los logs sin bloquearse y comprobaciones de primera presentación y cierre. Si falla una
-espera de GPU o la restauración de pantalla, la presentación conserva sus buffers y registra el error.
-**La estática reportada al arrancar y salir sigue pendiente de validación en la Xbox del usuario.**
+SDL-xenon provides audio, controllers, threads and timers. This adaptation does not supply an Xbox video/render driver; projects provide their graphics backend. Selecting SDL3_DIR does not add SDL calls to a project's source. See the [Windows guide](README-WINDOWS.md#sdl3-opcional) and [SDL-xenon documentation](https://github.com/xenosworks/SDL-xenon/blob/xenon/docs/README-xsdk.md).
 
-## SDL3, ejemplos y pruebas
+## Updates
 
-[SDL-xenon](https://github.com/xenosworks/SDL-xenon/tree/xenon) se prepara aparte.
-La [guía de SDL3 para Windows](README-WINDOWS.md#sdl3-opcional) explica la descarga, construcción y selección de ruta.
-Aporta audio, controles, hilos y temporizadores; el backend de esta adaptación no aporta un renderizador propio de Xbox.
-Rellenar SDL3_DIR no añade SDL3 automáticamente al código de tu proyecto.
+| Changed component | Next step |
+| --- | --- |
+| Interface or documentation | Update source and reopen the interface |
+| xSDK runtime/GPU source | Update, rebuild the SDK and rebuild affected projects |
+| Project source | Rebuild that project |
+| Shader compiler | Update/build shader tools and rebuild affected projects |
+| GCC, binutils, newlib or their patches | Review and explicitly build a new compiler |
 
-Los ejemplos incluyen `hello`, `triangle`, `cube`, `sound`, `template` y, cuando está disponible SDL-xenon, `sdl3`.
-**Abrir resultados** muestra `build`, incluidos títulos de prueba y ejemplos. Construir un XEX no equivale a probarlo
-correctamente en una consola. Las variantes `break` están rotas a propósito y deben fallar sus comprobaciones.
+An unrecorded installation is not automatically outdated. Existing toolchain metadata and version checks have limits; the tool does not certify every compiler patch or SDK capability.
 
-## Estado y límites
+## Examples and validation
 
-| Comprobación | Resultado registrado |
-|---|---|
-| Pruebas portables locales | 18 pasaron |
-| Recuperación de pantalla con registros simulados en Linux | Pasó; no demuestra comportamiento de pantalla real |
-| Apertura y disposición de la interfaz en un runner Windows | Pasó |
-| Construcción y carga de `libxsc.dll` en Windows | Pasó, incluida resolución de un shader de prueba |
-| Suite Windows de esa revisión | 17/18 pasaron; falla la prueba de configuración del toolchain |
-| SDL-xenon con las rutas del usuario | El usuario reportó compilación terminada sin errores; ejemplo SDL y consola pendientes |
-| Paquete precompilado completo y estática en consola | Validación pendiente |
+Examples include `hello`, `triangle`, `cube`, `sound`, `template` and `sdl3` when SDL-xenon is available. Deliberately broken `break` variants are expected to fail their checks.
 
-Consulta [Actions](https://github.com/ZenithUzu/xsdk/actions) para el estado actual. Los resultados anteriores son
-registros de una revisión, no una promesa de que todas las funciones del SDK estén validadas en Windows.
-El paquete precompilado es una vía opcional de instalación; no se da por disponible ni aprobado por existir su workflow.
+On November 3, 2026, **26 local host tests passed**, including live language switching and Windows PowerShell 5/7 recipe compatibility. A fresh CoopDX output directory built shaders and game objects and produced a local XEX and build report. These results do not establish performance or correctness on a console.
 
-## Documentación y créditos
+Hardware behavior still needs separate testing. Startup/exit static remains pending validation, and a complete prebuilt tool package is not assumed available merely because its workflow exists. See [Actions](https://github.com/ZenithUzu/xsdk/actions), [hardware observations](docs/HARDWARE.md) and the [detailed Spanish status](README-ES.md#estado-y-límites). No FPS guarantee is made.
 
-- [Guía de Windows: componentes, instalación, SDL3, opciones y errores](README-WINDOWS.md)
-- [Documentación original](README-UPSTREAM.md), [guía de programación](docs/GUIDE.md) y [funciones disponibles](docs/PARITY.md)
-- [Resultados y observaciones de hardware](docs/HARDWARE.md)
-- [Licencia MIT](LICENSE) y [avisos de terceros](THIRD_PARTY_NOTICES.md)
+## Documentation and credits
 
-**xSDK original:** Mena / xenosworks y colaboradores. Se conservan sus créditos y los de Xenia, libxenon y demás
-proyectos originales. **Adaptación de Windows:** ZenithUzu, con asistencia de OpenAI Codex.
-GCC, binutils, newlib, glslang y MSYS2 conservan sus propias licencias. Este fork no es una publicación oficial
-de xenosworks ni de Microsoft. Los resultados históricos del SDK original no validan automáticamente los cambios del fork.
+- [Windows installation, SDL3, options and troubleshooting — Spanish](README-WINDOWS.md)
+- [Port recipes — English / Español / Português](README-PROJECTS.md)
+- [Original SDK README](README-UPSTREAM.md), [programming guide](docs/GUIDE.md) and [capabilities](docs/PARITY.md)
+- [MIT license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md)
+
+**Original xSDK:** Mena / xenosworks and contributors. Original credits and notices, including Xenia and libxenon, are preserved. **Windows adaptation:** ZenithUzu, with OpenAI Codex assistance. GCC, binutils, newlib, glslang and MSYS2 retain their own licenses. This is not an official Microsoft or xenosworks release.
