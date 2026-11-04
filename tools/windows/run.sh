@@ -81,7 +81,20 @@ case "$action" in
 	bundle)
 		python3 tools/windows/package.py "$sdk" "$prefix" "$work/xsdk-windows-portable.zip"
 		;;
-	project)
+	project|project_check)
+		if [[ -f "$project/xsdk-project.json" ]]; then
+			[[ ${#extra[@]} == 0 ]] || { echo 'Port recipes use their own build configuration, not extra CMake arguments' >&2; exit 1; }
+			check=()
+			[[ "${XSDK_RESTORE_INPUTS:-0}" != 1 ]] || check+=(--restore-inputs)
+			[[ "$action" != project_check ]] || check+=(--check-only)
+			python3 tools/windows/project.py "$(cygpath -m "$project")" \
+				--sdk "$(cygpath -m "$sdk")" --compiler "$(cygpath -m "$prefix")" \
+				--msys "$(cygpath -m /)" --work "$(cygpath -m "$work")" \
+				--sdl "${sdl:+$(cygpath -m "$sdl")}" --rom "${XSDK_PROJECT_ROM:-}" \
+				--jobs "$jobs" --build-type "$build_type" "${check[@]}"
+			exit 0
+		fi
+		[[ "$action" != project_check ]] || { echo 'Choose a port root containing xsdk-project.json' >&2; exit 1; }
 		[[ -f "$project/CMakeLists.txt" ]] || { echo 'Select a CMake project' >&2; exit 1; }
 		[[ -s build/host/libxsc.dll && -s build/libxsdk.a ]] || { echo 'Build the SDK first' >&2; exit 1; }
 		cmake -S "$project" -B "$project/build-xsdk-windows" -G Ninja \

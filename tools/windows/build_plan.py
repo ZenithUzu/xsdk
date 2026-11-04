@@ -5,7 +5,8 @@ from pathlib import Path
 
 from options import BUILD_TYPES, MAKE_TARGETS, cmake_options
 
-ACTIONS = ("diagnose", "dependencies", "toolchain", "shaders", "sdk", "samples", "project", "validate", "advanced", "update", "bundle", "toolchain_fresh", "shaders_update")
+ACTIONS = ("diagnose", "dependencies", "toolchain", "shaders", "sdk", "samples", "project", "project_check",
+           "validate", "advanced", "update", "bundle", "toolchain_fresh", "shaders_update")
 
 
 def msys_path(value):
@@ -17,7 +18,7 @@ def msys_path(value):
 
 
 def plan(msys, sdk, prefix, work, jobs, action, project="", build_type="Release", sdl="",
-         cmake_args="[]", target="cmake_check", auto_update="0", glslang=""):
+         cmake_args="[]", target="cmake_check", auto_update="0", glslang="", rom="", language="en", restore_inputs="0"):
     if glslang:
         msys_path(glslang)
     if build_type not in BUILD_TYPES:
@@ -38,9 +39,13 @@ def plan(msys, sdk, prefix, work, jobs, action, project="", build_type="Release"
             msys_path(work), str(int(jobs))]
     args.extend([msys_path(project) if project else "", build_type, msys_path(sdl) if sdl else "", target])
     args.extend(extra)
-    if action == "project" and not project:
+    if action in ("project", "project_check") and not project:
         raise ValueError("Elige un proyecto CMake")
     env = dict(os.environ, MSYSTEM="UCRT64", CHERE_INVOKING="1")
+    env["XSDK_RESTORE_INPUTS"] = "1" if restore_inputs == "1" else "0"
+    if rom:
+        msys_path(rom)
+        env["XSDK_PROJECT_ROM"] = str(rom)
     if glslang:
         env["XSDK_GLSLANG_OVERRIDE"] = str(glslang)
     return args, env

@@ -4,7 +4,7 @@
 
 # xSDK para Windows
 
-Herramienta con interfaz en español para **detectar, administrar y reutilizar tus herramientas de xSDK** y
+Herramienta con interfaz en **inglés, español y portugués** para **detectar, administrar y reutilizar tus herramientas de xSDK** y
 compilar proyectos `.xex` para Xbox 360 desde Windows, mediante MSYS2 UCRT64. La rama de uso es **`main`**.
 
 Fork de [xenosworks/xsdk](https://github.com/xenosworks/xsdk), creado por **Mena / xenosworks y colaboradores**.
@@ -15,12 +15,16 @@ Se conservan el SDK original, su documentación, ejemplos, licencias y créditos
 [README original](README-UPSTREAM.md) ·
 [Estado de las construcciones](https://github.com/ZenithUzu/xsdk/actions)
 
+[Recetas de proyectos y guía EN / ES / PT](README-PROJECTS.md)
+
 ## Qué hace la herramienta
 
 - Detecta instalaciones en las rutas guardadas, ubicaciones habituales, `XSDK_TOOLCHAIN` y PATH.
 - Permite indicar manualmente las rutas de MSYS2, compilador, xSDK y un `glslang.exe` separado.
 - Muestra las versiones de GCC/C++, binutils, newlib y glslang, y el estado de las dependencias y bibliotecas.
 - Compila proyectos y ejemplos reutilizando las herramientas elegidas.
+- Reconoce recetas `xsdk-project.json`: comprobación previa, ROM local opcional y construcción del port en Release.
+- Guarda idioma y rutas; conserva los logs originales del compilador.
 - Consulta actualizaciones del código del SDK y de glslang-xenon, sin instalarlas al consultar.
 - Actualiza componentes por separado; una actualización del compilador se construye en una carpeta nueva.
 - Ofrece Debug, Release, RelWithDebInfo, MinSizeRel, opciones CMake y SDL3_DIR opcional.
@@ -35,7 +39,7 @@ es opcional y viene desactivada. No necesitas esperar un paquete precompilado pa
 | Componente | Para qué sirve | Cuándo se necesita |
 |---|---|---|
 | Windows 10/11 de 64 bits | Sistema host del port | Para usar la interfaz de Windows |
-| Python 3.11 o posterior, tkinter y lanzador `py` | Ejecuta `Iniciar-Windows.cmd` y la interfaz | Siempre para la interfaz actual |
+| Python 3.11 o posterior con tkinter | Ejecuta la interfaz mediante `py`; el lanzador también admite Python UCRT64 en la ruta predeterminada | Siempre para la interfaz |
 | MSYS2 UCRT64 | Entorno de construcción nativo de Windows | Para ejecutar las tareas de construcción |
 | GCC/G++ `powerpc-xsdk-elf`, binutils y newlib de xSDK | Compilan C/C++ para Xbox 360 | Para construir SDK y proyectos |
 | glslang-xenon para Windows | Prepara los shaders | Para proyectos o pruebas que compilan shaders |

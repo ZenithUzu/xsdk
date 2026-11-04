@@ -297,3 +297,8 @@ xSDK original por **Mena / xenosworks y colaboradores**; adaptación Windows por
 Se conservan [LICENSE](LICENSE), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) y la documentación original.
 GCC, binutils, newlib, glslang, SDL y MSYS2 conservan sus propias licencias. El fork no es una publicación oficial
 de Microsoft ni de xenosworks. Al distribuir binarios, conserva los avisos y fuentes requeridos por sus licencias.
+
+
+## Interfaz EN / ES / PT y recetas de ports
+
+La selección de idioma se guarda automáticamente. Para compilar CoopDX desde la raíz del repositorio con `xsdk-project.json`, consulta [la guía de recetas](README-PROJECTS.md). La herramienta reutiliza xSDK, GCC y SDL3 instalados, comprueba requisitos y genera el XEX local. Las correcciones del motor siguen en las fuentes del port.
