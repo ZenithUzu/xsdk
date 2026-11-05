@@ -62,3 +62,8 @@ Native subprocesses use `CREATE_NO_WINDOW` and hidden startup-window settings on
 The default builder uses a folder layout (`--onedir`), so dependencies remain visible in `_internal/`. A single self-extracting EXE remains an explicit build option with `--onefile`. Preserve the whole portable folder. Hashes for the EXE and its runtime dependencies are in `SHA256SUMS.txt`; a ZIP checksum is supplied alongside the downloadable archive.
 
 See [the source-review scope](SECURITY-REVIEW.md). Local antivirus results apply only to the tested artifact and definitions; neither a scan nor a hash guarantees absence of malware. This build is not Authenticode-signed. No antivirus exclusions, protection changes or administrator startup are requested.
+
+
+## Fuentes, enlaces y preparación
+
+La nueva pestaña **Fuentes y dependencias / Sources and dependencies / Fontes e dependências** permite detectar rutas, configurar URLs GitHub y construir o actualizar dependencias desde la interfaz. Consulta [la guía EN/ES/PT](README-DEPENDENCIES.md). MSYS2 es el requisito inicial; sus comandos trabajan por detrás con salida visible.

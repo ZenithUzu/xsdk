@@ -33,7 +33,7 @@ Abrir a interface apenas verifica as ferramentas; não reconstrói GCC, newlib o
 
 ## EXE portátil
 
-A interface pode ser empacotada como EXE com Python/Tkinter e prepara a pasta privada do CoopDX para Xbox. MSYS2, compilador, SDK compilado e SDL3 continuam como requisitos externos. Veja [uso e compilação do portátil](README-PORTABLE.md).
+A interface pode ser empacotada como EXE com Python/Tkinter e prepara a pasta privada do CoopDX para Xbox. MSYS2, compilador, SDK compilado e SDL3 continuam como requisitos externos. Veja [uso e compilação do portátil](README-PORTABLE.md). [Sources / Fuentes / Fontes](README-DEPENDENCIES.md).
 
 ## Requisitos
 

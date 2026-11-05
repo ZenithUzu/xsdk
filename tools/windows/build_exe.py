@@ -45,7 +45,7 @@ def assemble(output, executable):
             (output / 'licenses' / (name + '-license.terms')).write_text(text, encoding='utf-8')
     finally:
         window.destroy()
-    for name in ('LICENSE', 'THIRD_PARTY_NOTICES.md', 'README-PORTABLE.md', 'SECURITY-REVIEW.md'):
+    for name in ('LICENSE', 'THIRD_PARTY_NOTICES.md', 'README-PORTABLE.md', 'README-DEPENDENCIES.md', 'SECURITY-REVIEW.md'):
         shutil.copy2(ROOT / name, output / name)
     artifacts = [executable]
     artifacts.extend(path for path in (output / '_internal').rglob('*') if path.is_file())

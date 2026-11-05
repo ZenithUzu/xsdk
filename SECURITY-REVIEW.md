@@ -39,3 +39,12 @@ Se revisaron las rutas de ejecución de la herramienta de Windows y no se identi
 ## Português
 
 Foram revisados os caminhos de execução da ferramenta Windows e nenhuma backdoor foi identificada nesse escopo. As janelas CMD vinham das consultas às ferramentas sem opções de console. A correção preserva os logs visíveis. A inicialização não instala atualizações; consultas de rede são explícitas ou opcionais. A revisão não certifica todas as dependências nem garante a ausência de alertas em outros antivírus.
+
+
+## Dependency panel extension
+
+The dependency panel adds bounded filesystem discovery and explicit GitHub clone/build/update actions. Discovery skips network drives and linked directories, preserves valid choices and limits depth/count. It executes no shell commands. Version inspection still queries the selected local executables. GitHub URLs reject credentials, non-HTTPS origins, query/fragment, unsupported file/release links and invalid branch syntax; user values are passed as positional arguments. This limits argument injection and does not certify repository contents. Build actions intentionally execute code from user-selected sources.
+
+A static MSYS2 bootstrap installs UCRT64 Python only if missing and only after a dependency action. The setup driver can install missing MSYS2 build packages through a fixed pacman command. No installer runs at application startup. Updates use origin/branch checks, dirty-tree rejection and fast-forward merges; ZIP sources are cloned into new locations. Existing compiler destinations are preserved. All Python subprocess launches retain the no-console policy and captured logs.
+
+44 host tests passed after this extension. Real-laptop checks detected and reused existing components and configured/built SDL3 via CMake/Ninja, which reported no pending compilation. A fresh multi-hour compiler bootstrap was not repeated; it invokes the existing xSDK recipe. Frozen and antivirus results are specific to each portable artifact, not inherited from an earlier version.

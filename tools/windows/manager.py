@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from processes import hidden_options
+from discovery import detect
 
 
 def command(args, env=None):
@@ -21,31 +22,8 @@ def command(args, env=None):
 
 
 def discover(values):
-    found = dict(values)
-    roots = {
-        "msys": [values.get("msys", ""), "C:/msys64"],
-        "prefix": [values.get("prefix", ""), os.environ.get("XSDK_TOOLCHAIN", ""),
-                   "C:/xsdk-tools/compiler", str(Path.home() / "xsdk-gcc-windows")],
-    }
-    compiler = shutil.which("powerpc-xsdk-elf-gcc.exe")
-    if compiler:
-        roots["prefix"].append(str(Path(compiler).parent.parent))
-    bash = shutil.which("bash.exe")
-    if bash and Path(bash).parent.name == "bin" and Path(bash).parent.parent.name == "usr":
-        roots["msys"].append(str(Path(bash).parents[2]))
-    for key, candidates in roots.items():
-        suffix = "usr/bin/bash.exe" if key == "msys" else "bin/powerpc-xsdk-elf-gcc.exe"
-        for root in candidates:
-            if root and (Path(root) / suffix).is_file():
-                found[key] = str(Path(root))
-                break
-    shaders = [values.get("glslang", ""), str(Path(found["prefix"]) / "bin/glslang.exe"),
-               shutil.which("glslang.exe") or ""]
-    for shader in shaders:
-        if shader and Path(shader).is_file():
-            found["glslang"] = str(Path(shader))
-            break
-    return found
+    return detect(values)
+
 
 
 def fingerprint(sdk, component):
@@ -145,6 +123,9 @@ def inspect(values, online=False):
     else:
         sdk_status = "Bibliotecas presentes; comprobar o reconstruir solo el SDK"
     row("sdk", "xSDK", sdk, command(["git", "-C", sdk, "rev-parse", "--short", "HEAD"], env), sdk_status)
+    sdl = Path(values.get("sdl") or "__missing_sdl__")
+    row("sdl", "SDL3 Xenon", sdl, "", "SDL3Config.cmake presente" if (sdl / "SDL3Config.cmake").is_file()
+        else "Falta SDL3; usar Fuentes y dependencias")
     missing = [name for name in ("make.exe", "cmake.exe", "ninja.exe", "gcc.exe", "git.exe", "python3.exe")
                if not shutil.which(name, path=env["PATH"])]
     row("dependencies", "Dependencias MSYS2", msys, "UCRT64",

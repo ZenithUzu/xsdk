@@ -46,7 +46,7 @@ The toolchain recipe uses GCC 15.3.0, binutils 2.47 and newlib 4.6.0.20260123 wi
 
 ## Portable EXE
 
-The GUI can be packaged as a Windows EXE with Python/Tkinter included. It also prepares a private CoopDX game folder from your local source build and ROM. MSYS2, the compiler, built SDK and SDL3 remain external prerequisites. See [portable usage and build instructions](README-PORTABLE.md).
+The GUI can be packaged as a Windows EXE with Python/Tkinter included. It also prepares a private CoopDX game folder from your local source build and ROM. MSYS2, the compiler, built SDK and SDL3 remain external prerequisites. See [portable usage and build instructions](README-PORTABLE.md). [Sources / Fuentes / Fontes](README-DEPENDENCIES.md).
 
 ## Installation
 

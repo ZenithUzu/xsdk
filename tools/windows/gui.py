@@ -7,6 +7,7 @@ import sys
 import threading
 import time
 import tkinter as tk
+import webbrowser
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
@@ -16,6 +17,7 @@ from i18n import LANGUAGES, translate
 from options import BUILD_TYPES, MAKE_TARGETS
 from manager import inspect
 from game_package import package_game
+from dependencies import DEFAULTS as SOURCE_DEFAULTS, SOURCE_FIELDS, dependency_plan, github_source
 
 FROZEN = getattr(sys, "frozen", False)
 ROOT = (Path(sys.executable).resolve().parent / "sdk" if FROZEN
@@ -44,9 +46,11 @@ class App:
         self.settings_path = self.folder / "settings.json"
         defaults = {"msys": "C:/msys64", "sdk": str(DEFAULT_SDK),
                     "prefix": "C:/xsdk-tools/compiler", "work": "C:/xsdk-tools/work", "project": "", "jobs": "4",
-                    "sdl": "", "build_type": "Release", "cmake_args": "[]", "target": "cmake_check",
+                    "sdl": "C:/SDL-xenon/build-xsdk", "build_type": "Release",
+                    "cmake_args": "[]", "target": "cmake_check",
                     "auto_update": "0", "glslang": "", "rom": "", "language": "en", "restore_inputs": "0",
                     "pc_game": "", "package_output": "", "include_mods": "0"}
+        defaults.update(SOURCE_DEFAULTS)
         try:
             saved = json.loads(self.settings_path.read_text(encoding="utf-8"))
             defaults.update({key: str(value) for key, value in saved.items() if key in defaults})
@@ -77,6 +81,8 @@ class App:
         advanced = ttk.Frame(tabs, padding=8)
         tabs.add(home, text="Mis herramientas")
         tabs.add(settings, text="Rutas y proyecto")
+        sources = ttk.Frame(tabs, padding=8)
+        tabs.add(sources, text="Fuentes y dependencias")
         tabs.add(advanced, text="Instalación y pruebas avanzadas")
         ttk.Label(home, text="Reutiliza tus herramientas. Compilar un proyecto no reconstruye GCC ni newlib.").pack(
             anchor="w")
@@ -129,7 +135,8 @@ class App:
             else:
                 entry = ttk.Entry(grid, textvariable=self.fields[key])
             entry.grid(row=row, column=1, sticky="ew", padx=10)
-            if key in ("msys", "sdk", "prefix", "work", "project", "sdl", "glslang", "rom", "pc_game", "package_output"):
+            if key in ("msys", "sdk", "prefix", "work", "project", "sdl", "glslang", "rom",
+                       "pc_game", "package_output"):
                 ttk.Button(grid, text="Elegir…", command=lambda name=key: self.choose(name)).grid(row=row, column=2)
         ttk.Checkbutton(grid, text="Consultar actualizaciones al abrir (sin instalar)",
                         variable=self.fields["auto_update"], onvalue="1", offvalue="0",
@@ -155,12 +162,59 @@ class App:
         ttk.Button(buttons, text="Cancelar", command=self.cancel).grid(row=3, column=3, padx=3)
         for column in range(4):
             buttons.columnconfigure(column, weight=1)
+        source_canvas = tk.Canvas(sources, height=350, highlightthickness=0)
+        source_scroll = ttk.Scrollbar(sources, orient="vertical", command=source_canvas.yview)
+        source_scroll.pack(side="right", fill="y")
+        source_canvas.pack(fill="both", expand=True)
+        source_canvas.configure(yscrollcommand=source_scroll.set)
+        source_grid = ttk.Frame(source_canvas)
+        source_item = source_canvas.create_window((0, 0), window=source_grid, anchor="nw")
+        source_grid.bind("<Configure>", lambda event: source_canvas.configure(scrollregion=source_canvas.bbox("all")))
+        source_canvas.bind("<Configure>", lambda event: source_canvas.itemconfigure(source_item, width=event.width))
+        source_labels = (("msys", "MSYS2"), ("sdk_repo", "Repositorio xSDK Windows (HTTPS GitHub)"),
+                         ("sdk_ref", "Rama xSDK"), ("sdk", "Carpeta fuente xSDK"),
+                         ("prefix", "Compilador instalado o destino NUEVO"),
+                         ("shader_repo", "Repositorio glslang-xenon"), ("shader_ref", "Rama glslang"),
+                         ("sdl_repo", "Repositorio SDL3 Xenon"), ("sdl_ref", "Rama SDL3"),
+                         ("sdl_source", "Carpeta fuente SDL3"), ("sdl", "Carpeta compilada SDL3"),
+                         ("work", "Carpeta de trabajo"), ("search_root", "Carpeta adicional para buscar herramientas"))
+        for row, (key, label) in enumerate(source_labels):
+            ttk.Label(source_grid, text=label).grid(row=row, column=0, sticky="w", pady=3)
+            ttk.Entry(source_grid, textvariable=self.fields[key]).grid(row=row, column=1, sticky="ew", padx=8)
+            if key.endswith("_repo"):
+                ttk.Button(source_grid, text="Abrir enlace", command=lambda name=key: self.open_source(name)).grid(
+                    row=row, column=2)
+            elif key not in ("sdk_ref", "sdl_ref", "shader_ref"):
+                ttk.Button(source_grid, text="Elegir…", command=lambda name=key: self.choose(name)).grid(
+                    row=row, column=2)
+        source_grid.columnconfigure(1, weight=1)
+        ttk.Label(source_grid, text=("MSYS2 trabaja por detrás. "
+                                     "Las descargas y compilaciones solo empiezan al pulsar un botón."),
+                  wraplength=850).grid(row=len(source_labels), column=0, columnspan=3, sticky="w", pady=8)
+        dependency_buttons = (("Detectar rutas instaladas", lambda: self.scan(False)),
+                              ("Descargar xSDK", lambda: self.start("deps_fetch_sdk")),
+                              ("Descargar SDL3", lambda: self.start("deps_fetch_sdl")),
+                              ("Construir xSDK", lambda: self.start("deps_build_sdk")),
+                              ("Construir SDL3", lambda: self.start("deps_build_sdl")),
+                              ("Preparar todo lo faltante", lambda: self.start("deps_prepare")),
+                              ("Actualizar fuentes y reconstruir", lambda: self.start("deps_update_all")),
+                              ("Construir compilador en destino nuevo", self.new_compiler),
+                              ("Construir glslang", lambda: self.start("deps_build_shaders")))
+        for index, (label, callback) in enumerate(dependency_buttons):
+            button = ttk.Button(source_grid, text=label, command=callback)
+            button.grid(row=len(source_labels) + 1 + index // 3, column=index % 3, sticky="ew", padx=3, pady=3)
+            self.actions.append(button)
+        ttk.Button(source_grid, text="Web de MSYS2", command=lambda: webbrowser.open("https://www.msys2.org/")).grid(
+            row=len(source_labels) + 4, column=0, sticky="w")
+        ttk.Button(source_grid, text="Ver receta del compilador", command=self.open_compiler_recipe).grid(
+            row=len(source_labels) + 4, column=1, sticky="w")
         self.output = tk.Text(panel, wrap="word", font=("Consolas", 10), state="disabled")
         bottom = ttk.Frame(panel)
         bottom.pack(side="bottom", fill="x", pady=(8, 0))
         ttk.Button(bottom, text="Abrir resultados", command=self.results).pack(side="left")
         ttk.Button(bottom, text="Abrir logs", command=self.logs).pack(side="left")
         ttk.Button(bottom, text="Créditos", command=lambda: self.info("Créditos", CREDITS)).pack(side="left")
+        ttk.Button(bottom, text="Cancelar", command=self.cancel).pack(side="left")
         ttk.Label(panel, textvariable=self.status).pack(side="bottom", anchor="w", pady=(6, 0))
         self.output.pack(fill="both", expand=True)
         self.apply_language()
@@ -245,7 +299,8 @@ class App:
                                       "Para usar tus herramientas actuales basta con indicar su ruta. "
                                       "¿Quieres construir un compilador nuevo sin reemplazar el existente?"):
                 return
-            destination = filedialog.asksaveasfilename(title=self.tr("Carpeta NUEVA del compilador"), initialfile="compiler-nuevo")
+            destination = filedialog.asksaveasfilename(title=self.tr("Carpeta NUEVA del compilador"),
+                                                     initialfile="compiler-nuevo")
             if not destination:
                 return
             if Path(destination).exists():
@@ -268,6 +323,31 @@ class App:
             self.settings_path.write_text(json.dumps(values, indent=2), encoding="utf-8")
         except OSError as error:
             self.error("Preferencias", str(error))
+
+    def new_compiler(self):
+        if self.busy:
+            return
+        if Path(self.fields["prefix"].get()).exists():
+            parent = filedialog.askdirectory(title=self.tr("Carpeta NUEVA del compilador"))
+            if not parent:
+                return
+            self.fields["prefix"].set(str(Path(parent) / ("compiler-" + time.strftime("%Y%m%d-%H%M%S"))))
+        self.start("deps_build_compiler")
+
+    def open_compiler_recipe(self):
+        try:
+            url, ref = github_source(self.fields["sdk_repo"].get(), self.fields["sdk_ref"].get())
+            webbrowser.open(url.removesuffix(".git") + "/blob/" + ref + "/tools/toolchain/build.sh")
+        except ValueError as error:
+            self.error("Configuración", str(error))
+
+    def open_source(self, key):
+        branch = {"sdk_repo": "sdk_ref", "sdl_repo": "sdl_ref", "shader_repo": "shader_ref"}[key]
+        try:
+            url, ref = github_source(self.fields[key].get(), self.fields[branch].get())
+            webbrowser.open(url.removesuffix(".git") + "/tree/" + ref)
+        except ValueError as error:
+            self.error("Configuración", str(error))
 
     def choose(self, key):
         if key == "package_output":
@@ -298,13 +378,16 @@ class App:
                 if not (Path(values["project"]) / "xsdk-project.json").is_file():
                     raise ValueError("Select the CoopDX repository root containing xsdk-project.json.")
             build_values = {key: value for key, value in values.items()
-                            if key not in ("pc_game", "package_output", "include_mods")}
+                            if key not in ("pc_game", "package_output", "include_mods", *SOURCE_FIELDS)}
             planned = ("project_check" if action == "package_existing" else
                        "project" if action == "game_package" else action)
-            args, env = plan(action=planned, **build_values)
+            if action.startswith("deps_"):
+                args, env = dependency_plan(action.removeprefix("deps_"), values, ROOT)
+            else:
+                args, env = plan(action=planned, **build_values)
             if not Path(args[0]).is_file():
                 raise ValueError("Instala y actualiza MSYS2 desde https://www.msys2.org/ y elige su carpeta")
-            if not (Path(values["sdk"]) / "tools/windows/run.sh").is_file():
+            if not action.startswith("deps_") and not (Path(values["sdk"]) / "tools/windows/run.sh").is_file():
                 raise ValueError("La carpeta seleccionada no contiene este port de xSDK")
             self.folder.mkdir(parents=True, exist_ok=True)
             self.settings_path.write_text(json.dumps(values, indent=2), encoding="utf-8")
@@ -333,6 +416,8 @@ class App:
                     log.write(line)
                     log.flush()
                     self.events.put(line)
+                    if line.startswith("XSDK_PATHS="):
+                        self.events.put({"paths": json.loads(line.strip().split("=", 1)[1])})
                     if line.startswith("XSDK_NEW_ROOT="):
                         self.events.put({"paths": {"sdk": line.strip().split("=", 1)[1]}})
                 code = self.process.wait()
@@ -367,7 +452,7 @@ class App:
                 for row in item.get("rows", []):
                     self.inventory.insert("", "end", iid=row["key"],
                                           values=tuple(self.tr(row[key]) for key in ("name", "version", "status")))
-                for key in ("prefix", "msys", "glslang", "sdk"):
+                for key in ("prefix", "msys", "glslang", "sdk", "sdl", "sdl_source"):
                     if item.get("paths", {}).get(key):
                         self.fields[key].set(item["paths"][key])
                 self.save_preferences()
@@ -379,6 +464,8 @@ class App:
                     self.fields["glslang"].set(str(Path(self.fields["prefix"].get()) / "bin/glslang.exe"))
                     self.save_preferences()
                 self.busy = False
+                if code == 0 and self.active_action.startswith("deps_"):
+                    self.window.after(250, lambda: self.scan(False))
                 for button in self.actions:
                     button.configure(state="normal")
             else:

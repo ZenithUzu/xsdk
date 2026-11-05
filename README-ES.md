@@ -41,7 +41,7 @@ Se conservan el SDK original, su documentación, ejemplos, licencias y créditos
 
 ## EXE portable
 
-La interfaz se empaqueta como EXE con Python/Tkinter incluido y permite construir y preparar la carpeta privada de CoopDX para Xbox. MSYS2, compilador, SDK construido y SDL3 siguen siendo requisitos externos. Consulta [uso y construcción del portable](README-PORTABLE.md).
+La interfaz se empaqueta como EXE con Python/Tkinter incluido y permite construir y preparar la carpeta privada de CoopDX para Xbox. MSYS2, compilador, SDK construido y SDL3 siguen siendo requisitos externos. Consulta [uso y construcción del portable](README-PORTABLE.md). [Sources / Fuentes / Fontes](README-DEPENDENCIES.md).
 
 ## Componentes necesarios
 
