@@ -16,7 +16,7 @@ class DiscoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             files = ['dev/sdk/cmake/xsdk.cmake', 'dev/compiler/bin/powerpc-xsdk-elf-gcc.exe',
-                     'dev/compiler/bin/glslang.exe', 'dev/msys/usr/bin/bash.exe',
+                     'dev/compiler/bin/glslang.exe', 'dev/msys/usr/bin/bash.exe', 'dev/msys/usr/bin/pacman.exe',
                      'dev/SDL/include/SDL3/SDL.h', 'dev/SDL/build-xsdk/SDL3Config.cmake']
             for name in files:
                 path = root / name
@@ -31,6 +31,15 @@ class DiscoveryTests(unittest.TestCase):
             explicit.touch()
             with patch('discovery.shutil.which', return_value=None):
                 self.assertEqual(detect({'glslang': str(explicit)}, search_roots=[root])['glslang'], str(explicit))
+
+    def test_git_bash_is_not_mistaken_for_msys2(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            bash = root / 'Git/usr/bin/bash.exe'
+            bash.parent.mkdir(parents=True)
+            bash.touch()
+            with patch('discovery.shutil.which', return_value=None), patch.dict(os.environ, {}, clear=True):
+                self.assertFalse(detect({}, search_roots=[root])['msys'])
 
     def test_depth_limit_prevents_unbounded_search(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -51,7 +60,7 @@ class DependencyTests(unittest.TestCase):
                            prefix=str(self.root / 'compiler'), work=str(self.root / 'work'),
                            sdl=str(self.root / 'SDL/build-xsdk'), sdl_source=str(self.root / 'SDL'),
                            jobs='4', glslang='')
-        for name in ['msys/usr/bin/bash.exe', 'msys/usr/bin/git.exe', 'msys/usr/bin/make.exe',
+        for name in ['msys/usr/bin/bash.exe', 'msys/usr/bin/pacman.exe', 'msys/usr/bin/git.exe', 'msys/usr/bin/make.exe',
                      'msys/ucrt64/bin/cmake.exe', 'msys/ucrt64/bin/ninja.exe', 'msys/ucrt64/bin/gcc.exe',
                      'msys/ucrt64/bin/python.exe', 'sdk/cmake/xsdk.cmake', 'sdk/tools/windows/run.sh',
                      'sdk/build/libxsdk.a', 'sdk/build/host/libxsc.dll',

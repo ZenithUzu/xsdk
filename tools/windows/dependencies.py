@@ -45,7 +45,7 @@ def dependency_plan(action, values, script_root):
         raise ValueError('Use 1 to 64 jobs.')
     msys = Path(values['msys'])
     bash = msys / 'usr/bin/bash.exe'
-    if not bash.is_file():
+    if not bash.is_file() or not (msys / 'usr/bin/pacman.exe').is_file():
         raise ValueError('Install MSYS2 first and select its root folder. Setup will install missing UCRT64 packages.')
     if (action in ('fetch_sdl', 'build_sdl', 'prepare', 'update_all')
             and (not values.get('sdl_source') or not values.get('sdl'))):

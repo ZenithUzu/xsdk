@@ -28,6 +28,8 @@ def detect(values, search_roots=None, limit=600, depth=3):
         markers = {'sdk': 'cmake/xsdk.cmake', 'msys': 'usr/bin/bash.exe',
                    'prefix': 'bin/powerpc-xsdk-elf-gcc.exe', 'sdl': 'SDL3Config.cmake',
                    'sdl_source': 'include/SDL3/SDL.h'}
+        if name == 'msys' and not (path / 'usr/bin/pacman.exe').is_file():
+            return False
         return path.is_file() if name == 'glslang' else (path / markers[name]).is_file()
     locked = {name for name, path in explicit.items() if valid(name, path)}
     candidates = []
