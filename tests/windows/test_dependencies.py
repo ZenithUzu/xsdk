@@ -118,6 +118,10 @@ class DependencyTests(unittest.TestCase):
             setup('repair_compiler', self.values)
         commands = [list(map(str, call.args[0])) for call in execute.call_args_list]
         self.assertEqual(sum('-C' in command for command in commands), 3)
+        installs = [call for call in execute.call_args_list if '-C' in call.args[0]]
+        for call in installs:
+            self.assertEqual(call.kwargs['env']['PATH'].split(os.pathsep)[0], str(prefix / 'bin'))
+            self.assertIn(str(Path(self.values['msys']) / 'usr/bin'), call.kwargs['env']['PATH'])
         self.assertFalse(any('toolchain_fresh' in command for command in commands))
         self.assertTrue(list((Path(self.values['work']) / 'compiler-backups').glob('compiler-*')))
 

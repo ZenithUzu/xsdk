@@ -70,11 +70,11 @@ def dependency_plan(action, values, script_root):
     return command, environment
 
 
-def execute(command, cwd=None, capture=False):
+def execute(command, cwd=None, capture=False, env=None):
     print('> ' + subprocess.list2cmdline(list(map(str, command))), flush=True)
     if capture:
-        return subprocess.check_output(list(map(str, command)), cwd=cwd, text=True, **hidden_options()).strip()
-    subprocess.run(list(map(str, command)), cwd=cwd, check=True, **hidden_options())
+        return subprocess.check_output(list(map(str, command)), cwd=cwd, env=env, text=True, **hidden_options()).strip()
+    subprocess.run(list(map(str, command)), cwd=cwd, env=env, check=True, **hidden_options())
     return ''
 
 
@@ -198,8 +198,15 @@ def setup(action, values):
         shutil.copytree(prefix, backup)
         if compatible:
             print('Reusing registered compiler build cache; reinstalling into the selected destination.', flush=True)
+            # A login shell replaces its inherited PATH. Restore the selected
+            # compiler explicitly for make and every recursive Newlib subprocess.
+            environment = dict(os.environ)
+            environment['PATH'] = os.pathsep.join([str(prefix / 'bin'), str(msys / 'ucrt64/bin'),
+                                                   str(msys / 'usr/bin'), environment.get('PATH', '')])
+            execute([prefix / 'bin/powerpc-xsdk-elf-gcc.exe', '-dumpmachine'], env=environment)
             for name, target in stages:
-                execute([msys / 'usr/bin/make.exe', '-C', cached / 'build' / name, '-j' + values['jobs'], target])
+                execute([msys / 'usr/bin/make.exe', '-C', cached / 'build' / name, '-j' + values['jobs'], target],
+                        env=environment)
         else:
             print('No compatible cache: a compiler rebuild is required, but the destination is retained.', flush=True)
             cached = work / 'compiler-build-cache' / recipe[:16]
