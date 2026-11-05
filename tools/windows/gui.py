@@ -3,6 +3,7 @@ import json
 import os
 import queue
 import subprocess
+import sys
 import threading
 import time
 import tkinter as tk
@@ -13,8 +14,12 @@ from build_plan import plan
 from i18n import LANGUAGES, translate
 from options import BUILD_TYPES, MAKE_TARGETS
 from manager import inspect
+from game_package import package_game
 
-ROOT = Path(__file__).resolve().parents[2]
+FROZEN = getattr(sys, "frozen", False)
+ROOT = (Path(sys.executable).resolve().parent / "sdk" if FROZEN
+        else Path(__file__).resolve().parents[2])
+DEFAULT_SDK = Path("C:/xsdk-windows") if FROZEN and Path("C:/xsdk-windows").is_dir() else ROOT
 CREDITS = """xSDK original: Mena / xenosworks — MIT
 https://github.com/xenosworks/xsdk
 Port experimental para Windows e interfaz: Axel, con asistencia de OpenAI Codex.
@@ -33,12 +38,14 @@ class App:
         self.process = None
         self.busy = False
         self.cancelled = threading.Event()
-        self.folder = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "xsdk-windows"
+        self.folder = (Path(sys.executable).resolve().parent / "data" if FROZEN
+                       else Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "xsdk-windows")
         self.settings_path = self.folder / "settings.json"
-        defaults = {"msys": "C:/msys64", "sdk": str(ROOT),
+        defaults = {"msys": "C:/msys64", "sdk": str(DEFAULT_SDK),
                     "prefix": "C:/xsdk-tools/compiler", "work": "C:/xsdk-tools/work", "project": "", "jobs": "4",
                     "sdl": "", "build_type": "Release", "cmake_args": "[]", "target": "cmake_check",
-                    "auto_update": "0", "glslang": "", "rom": "", "language": "en", "restore_inputs": "0"}
+                    "auto_update": "0", "glslang": "", "rom": "", "language": "en", "restore_inputs": "0",
+                    "pc_game": "", "package_output": "", "include_mods": "0"}
         try:
             saved = json.loads(self.settings_path.read_text(encoding="utf-8"))
             defaults.update({key: str(value) for key, value in saved.items() if key in defaults})
@@ -47,7 +54,8 @@ class App:
         self.fields = {name: tk.StringVar(value=value) for name, value in defaults.items()}
         self.status = tk.StringVar(value="Port experimental — aún requiere validación completa en Windows")
         window.title("xSDK para Windows — experimental")
-        window.geometry("1180x920")
+        window.geometry(f"{min(1180, window.winfo_screenwidth() - 80)}x"
+                        f"{min(920, max(600, window.winfo_screenheight() - 100))}")
         panel = ttk.Frame(window, padding=14)
         panel.pack(fill="both", expand=True)
         ttk.Label(panel, text="xSDK · Windows", font=("Segoe UI", 20, "bold")).pack(anchor="w")
@@ -85,18 +93,31 @@ class App:
                                 ("Instalar / actualizar seleccionado", self.update_selected),
                                 ("Compilar proyecto", lambda: self.start("project")),
                                 ("Comprobar receta del port", lambda: self.start("project_check")),
-                                ("Reconstruir solo SDK", lambda: self.start("sdk")))):
+                                ("Reconstruir solo SDK", lambda: self.start("sdk")),
+                                ("Construir y empaquetar juego", lambda: self.start("game_package")),
+                                ("Empaquetar compilación existente", lambda: self.start("package_existing")))):
             button = ttk.Button(shortcuts, text=label, command=callback)
             button.grid(row=index // 3, column=index % 3, padx=3, pady=3, sticky="ew")
             self.actions.append(button)
         for column in range(3):
             shortcuts.columnconfigure(column, weight=1)
-        grid = ttk.Frame(settings)
-        grid.pack(fill="x")
+        settings_canvas = tk.Canvas(settings, height=350, highlightthickness=0)
+        settings_scroll = ttk.Scrollbar(settings, orient="vertical", command=settings_canvas.yview)
+        settings_scroll.pack(side="right", fill="y")
+        settings_canvas.pack(side="left", fill="both", expand=True)
+        settings_canvas.configure(yscrollcommand=settings_scroll.set)
+        grid = ttk.Frame(settings_canvas)
+        settings_item = settings_canvas.create_window((0, 0), window=grid, anchor="nw")
+        grid.bind("<Configure>", lambda event: settings_canvas.configure(
+            scrollregion=settings_canvas.bbox("all")))
+        settings_canvas.bind("<Configure>", lambda event: settings_canvas.itemconfigure(
+            settings_item, width=event.width))
         labels = (("msys", "MSYS2"), ("sdk", "Código de xSDK"), ("prefix", "Compilador instalado (carpeta raíz)"),
                   ("work", "Carpeta de trabajo"), ("glslang", "glslang.exe instalado (opcional)"),
                   ("project", "Proyecto CMake o raíz del port"), ("rom", "ROM privada del proyecto (opcional)"),
                   ("sdl", "SDL3_DIR (opcional)"),
+                  ("pc_game", "CoopDX PC local (opcional)"),
+                  ("package_output", "Carpeta NUEVA del juego empaquetado"),
                   ("build_type", "Configuración CMake"), ("cmake_args", "Opciones CMake (lista JSON)"),
                   ("target", "Prueba avanzada"), ("jobs", "Trabajos simultáneos"))
         for row, (key, label) in enumerate(labels):
@@ -107,7 +128,7 @@ class App:
             else:
                 entry = ttk.Entry(grid, textvariable=self.fields[key])
             entry.grid(row=row, column=1, sticky="ew", padx=10)
-            if key in ("msys", "sdk", "prefix", "work", "project", "sdl", "glslang", "rom"):
+            if key in ("msys", "sdk", "prefix", "work", "project", "sdl", "glslang", "rom", "pc_game", "package_output"):
                 ttk.Button(grid, text="Elegir…", command=lambda name=key: self.choose(name)).grid(row=row, column=2)
         ttk.Checkbutton(grid, text="Actualizar automáticamente al abrir (solo copias Git limpias)",
                         variable=self.fields["auto_update"], onvalue="1", offvalue="0",
@@ -115,6 +136,9 @@ class App:
         ttk.Checkbutton(grid, text="Restaurar entradas heredadas locales (solo con permiso para usarlas)",
                         variable=self.fields["restore_inputs"], onvalue="1", offvalue="0").grid(
                             row=len(labels) + 1, column=1, sticky="w")
+        ttk.Checkbutton(grid, text="Incluir mods y packs locales (compatibilidad sin confirmar)",
+                        variable=self.fields["include_mods"], onvalue="1", offvalue="0").grid(
+                            row=len(labels) + 2, column=1, sticky="w")
         grid.columnconfigure(1, weight=1)
         buttons = ttk.Frame(advanced)
         buttons.pack(fill="x", pady=12)
@@ -131,13 +155,13 @@ class App:
         for column in range(4):
             buttons.columnconfigure(column, weight=1)
         self.output = tk.Text(panel, wrap="word", font=("Consolas", 10), state="disabled")
-        self.output.pack(fill="both", expand=True)
         bottom = ttk.Frame(panel)
-        bottom.pack(fill="x", pady=(8, 0))
+        bottom.pack(side="bottom", fill="x", pady=(8, 0))
         ttk.Button(bottom, text="Abrir resultados", command=self.results).pack(side="left")
         ttk.Button(bottom, text="Abrir logs", command=self.logs).pack(side="left")
         ttk.Button(bottom, text="Créditos", command=lambda: self.info("Créditos", CREDITS)).pack(side="left")
-        ttk.Label(panel, textvariable=self.status).pack(anchor="w", pady=(6, 0))
+        ttk.Label(panel, textvariable=self.status).pack(side="bottom", anchor="w", pady=(6, 0))
+        self.output.pack(fill="both", expand=True)
         self.apply_language()
         window.protocol("WM_DELETE_WINDOW", self.close)
         window.after(100, self.poll)
@@ -245,6 +269,11 @@ class App:
             self.error("Preferencias", str(error))
 
     def choose(self, key):
+        if key == "package_output":
+            parent = filedialog.askdirectory()
+            if parent:
+                self.fields[key].set(str(Path(parent) / ("sm64coopdx360-" + time.strftime("%Y%m%d-%H%M%S"))))
+            return
         folder = (filedialog.askopenfilename(filetypes=[(self.tr("Ejecutable"), "*.exe")])
                   if key == "glslang" else filedialog.askopenfilename(filetypes=[("ROM", "*.z64 *.n64 *.v64")])
                   if key == "rom" else filedialog.askdirectory())
@@ -260,7 +289,18 @@ class App:
                 if not (Path(values["prefix"]) / "bin/powerpc-xsdk-elf-g++.exe").is_file():
                     raise ValueError("Indica tu compilador existente en Rutas y proyecto, "
                                      "o instala el componente faltante")
-            args, env = plan(action=action, **values)
+            if action in ("game_package", "package_existing"):
+                if not values["package_output"]:
+                    raise ValueError("Choose a NEW game output folder in Paths and project.")
+                if Path(values["package_output"]).exists():
+                    raise ValueError("Choose a NEW output folder; existing folders are never overwritten.")
+                if not (Path(values["project"]) / "xsdk-project.json").is_file():
+                    raise ValueError("Select the CoopDX repository root containing xsdk-project.json.")
+            build_values = {key: value for key, value in values.items()
+                            if key not in ("pc_game", "package_output", "include_mods")}
+            planned = ("project_check" if action == "package_existing" else
+                       "project" if action == "game_package" else action)
+            args, env = plan(action=planned, **build_values)
             if not Path(args[0]).is_file():
                 raise ValueError("Instala y actualiza MSYS2 desde https://www.msys2.org/ y elige su carpeta")
             if not (Path(values["sdk"]) / "tools/windows/run.sh").is_file():
@@ -277,9 +317,9 @@ class App:
         for button in self.actions:
             button.configure(state="disabled")
         self.status.set(self.tr("Ejecutando: ") + action)
-        threading.Thread(target=self.run, args=(args, env, action), daemon=True).start()
+        threading.Thread(target=self.run, args=(args, env, action, values), daemon=True).start()
 
-    def run(self, args, env, action):
+    def run(self, args, env, action, values):
         log_path = self.folder / (time.strftime("%Y%m%d-%H%M%S-") + action + ".log")
         code = -1
         try:
@@ -296,7 +336,16 @@ class App:
                     if line.startswith("XSDK_NEW_ROOT="):
                         self.events.put({"paths": {"sdk": line.strip().split("=", 1)[1]}})
                 code = self.process.wait()
-        except OSError as error:
+                if code == 0 and action in ("game_package", "package_existing"):
+                    destination, count = package_game(
+                        values["project"], Path(values["work"]) / "projects" / Path(values["project"]).name,
+                        values["package_output"], values["pc_game"], values["include_mods"] == "1",
+                        self.cancelled.is_set)
+                    message = f"Package ready: {destination} ({count} files). Hardware validation: not-run.\n"
+                    log.write(message)
+                    self.events.put(message)
+        except (OSError, ValueError) as error:
+            code = 1
             self.events.put(str(error) + "\n")
             if self.process and self.process.poll() is None:
                 self.cancel()
@@ -375,9 +424,30 @@ class App:
             self.window.destroy()
 
 
-if __name__ == "__main__":
+def main():
     if os.name != "nt":
-        raise SystemExit("La interfaz se ejecuta en Windows; las pruebas portables no necesitan abrirla")
+        raise SystemExit("The desktop interface runs on Windows.")
     root = tk.Tk()
-    App(root)
-    root.mainloop()
+    if len(sys.argv) == 3 and sys.argv[1] == "--self-test":
+        root.withdraw()
+        root.after = lambda *args: None
+        app = App(root)
+        app.save_preferences = lambda: None
+        tested = []
+        for code, label in LANGUAGES.items():
+            app.language_choice.set(label)
+            app.change_language()
+            assert root.title() == translate("xSDK para Windows — experimental", code)
+            tested.append(code)
+        root.update_idletasks()
+        result = {"passed": True, "frozen": FROZEN, "languages": tested,
+                  "tk": str(tk.TkVersion), "python": sys.version.split()[0]}
+        Path(sys.argv[2]).write_text(json.dumps(result, indent=2), encoding="utf-8")
+        root.destroy()
+    else:
+        App(root)
+        root.mainloop()
+
+
+if __name__ == "__main__":
+    main()

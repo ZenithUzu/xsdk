@@ -4,6 +4,22 @@ LANGUAGES = {"en": "English", "es": "Español", "pt": "Português"}
 
 # Existing Spanish messages stay the keys so saved settings and backend errors remain compatible.
 MESSAGES = [
+    ("Elige una carpeta NUEVA de salida del juego en Rutas y proyecto.",
+     "Choose a NEW game output folder in Paths and project.",
+     "Escolha uma NOVA pasta de saída do jogo em Caminhos e projeto."),
+    ("Elige una carpeta NUEVA; nunca se sobrescriben las existentes.",
+     "Choose a NEW output folder; existing folders are never overwritten.",
+     "Escolha uma NOVA pasta; pastas existentes nunca são sobrescritas."),
+    ("Selecciona la raíz de CoopDX que contiene xsdk-project.json.",
+     "Select the CoopDX repository root containing xsdk-project.json.",
+     "Selecione a raiz do CoopDX que contém xsdk-project.json."),
+    ("Construir y empaquetar juego", "Build and package game", "Compilar e empacotar jogo"),
+    ("Empaquetar compilación existente", "Package existing build", "Empacotar compilação existente"),
+    ("CoopDX PC local (opcional)", "Local CoopDX PC (optional)", "CoopDX PC local (opcional)"),
+    ("Carpeta NUEVA del juego empaquetado", "NEW packaged game folder", "NOVA pasta do jogo empacotado"),
+    ("Incluir mods y packs locales (compatibilidad sin confirmar)",
+     "Include local mods and packs (compatibility unconfirmed)",
+     "Incluir mods e packs locais (compatibilidade não confirmada)"),
     ("Disponible", "Available", "Disponível"),
     ("Construir SDK (reutiliza compilador y shaders)",
      "Build SDK (reuse compiler and shader tools)",

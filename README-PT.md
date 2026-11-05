@@ -31,6 +31,10 @@ Este fork experimental do [xenosworks/xsdk](https://github.com/xenosworks/xsdk) 
 
 Abrir a interface apenas verifica as ferramentas; não reconstrói GCC, newlib ou shaders automaticamente. Encontrar uma versão não comprova que ela contém os patches necessários para Xenon.
 
+## EXE portátil
+
+A interface pode ser empacotada como EXE com Python/Tkinter e prepara a pasta privada do CoopDX para Xbox. MSYS2, compilador, SDK compilado e SDL3 continuam como requisitos externos. Veja [uso e compilação do portátil](README-PORTABLE.md).
+
 ## Requisitos
 
 | Componente | Finalidade |
