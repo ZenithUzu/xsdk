@@ -34,6 +34,8 @@ If a rule gets in the way of correct code, change the rule in this file first, i
 - Windows-port exception, requested by the user: host builds may use MSYS2 UCRT64 to produce native Windows
   executables and `libxsc.dll`; the GUI uses Python standard-library tkinter. No WSL is required. The compiler
   bootstrap and end-to-end XEX build remain experimental until Windows and console tests pass.
+- M71 exception, agreed 2026-11-02: the GameCube recompiler's host tools (gamecube-xenon's `tools/gcmap` and what
+  builds on it) are C++ built in WSL, as they share milestone 68's C++ decoder and translator.
 - Zero warnings: our C builds with `-Wall -Wextra -Werror`.
 - Dependencies are the xenon toolchain (GCC, binutils, newlib) only. No libxenon in titles: it drives bare metal, not
   the retail kernel. Adding a library needs a reason in the commit message.

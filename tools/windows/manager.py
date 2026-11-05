@@ -12,6 +12,7 @@ from pathlib import Path
 from processes import hidden_options
 from discovery import detect
 from process_tree import ProcessTree
+from upstream import UPSTREAM_REPOSITORY, UPSTREAM_BRANCH
 
 
 def command(args, env=None, cancelled=None):
@@ -149,6 +150,14 @@ def inspect(values, online=False, cancelled=None):
     sdl = Path(values.get("sdl") or "__missing_sdl__")
     row("sdl", "SDL3 Xenon", sdl, "", "SDL3Config.cmake presente" if (sdl / "SDL3Config.cmake").is_file()
         else "Falta SDL3; usar Fuentes y dependencias")
+    try:
+        upstream_state = json.loads((sdk / ".xsdk-upstream.json").read_text(encoding="utf-8"))
+        upstream_revision = upstream_state.get("upstream_revision", "")
+        if not isinstance(upstream_revision, str):
+            upstream_revision = ""
+    except (OSError, ValueError):
+        upstream_revision = ""
+    row("upstream", "xSDK original", sdk, upstream_revision[:12], "Integrar desde Fuentes y dependencias")
     missing = [name for name in ("make.exe", "cmake.exe", "ninja.exe", "gcc.exe", "git.exe", "python3.exe")
                if not shutil.which(name, path=env["PATH"])]
     row("dependencies", "Dependencias MSYS2", msys, "UCRT64",
@@ -158,10 +167,13 @@ def inspect(values, online=False, cancelled=None):
         for key, repository, branch, local in (
             ("sdk", "https://github.com/ZenithUzu/xsdk.git", "main",
              query([git, "-C", sdk, "rev-parse", "HEAD"], env)),
+            ("upstream", UPSTREAM_REPOSITORY, UPSTREAM_BRANCH, ""),
             ("shaders", "https://github.com/xenosworks/glslang-xenon.git", "xenon",
              state.get("shaders", {}).get("source", "")),
         ):
             remote = query([git, "ls-remote", repository, "refs/heads/" + branch], env)
+            if key == "upstream":
+                local = upstream_revision
             for item in rows:
                 if item["key"] == key:
                     item["status"] += (" · No se pudo consultar el remoto" if not remote else

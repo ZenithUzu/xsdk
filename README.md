@@ -32,6 +32,8 @@ Settings/logs stay in `data/`. Use **Update sources and rebuild** for explicit d
 
 **What the download contains:** the GUI/runtime, public SDK and application source, license notices, runtime hashes and validation/antivirus reports. **Not included:** MSYS2, a prebuilt PowerPC compiler, ROMs, private game assets or a ready-to-play game. The dependency panel can prepare the build tools after MSYS2 is installed.
 
+The same app can now integrate original xSDK updates while retaining Windows changes; see [the upstream update workflow](README-DEPENDENCIES.md#actualizaciones-del-xsdk-original-desde-la-misma-herramienta). It also fixes cancellation and offers in-place dependency updates with backups.
+
 ## Features
 
 - Detect and reuse installed tools instead of rebuilding the compiler for every project.

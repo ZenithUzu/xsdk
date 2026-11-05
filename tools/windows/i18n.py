@@ -4,6 +4,10 @@ LANGUAGES = {"en": "English", "es": "Español", "pt": "Português"}
 
 # Existing Spanish messages stay the keys so saved settings and backend errors remain compatible.
 MESSAGES = [
+    ("Integrar desde Fuentes y dependencias", "Integrate from Sources and dependencies",
+     "Integrar em Fontes e dependências"),
+    ("Integrar novedades del original", "Integrate original SDK updates", "Integrar novidades do SDK original"),
+    ("Repositorio original", "Original repository", "Repositório original"),
     ("Operación cancelada.", "Operation cancelled.", "Operação cancelada."),
     ("Actualizar en la misma ruta con respaldo", "Update in place with backup", "Atualizar na mesma pasta com backup"),
     ("Actualizar/reinstalar compilador actual", "Update/reinstall current compiler", "Atualizar/reinstalar compilador atual"),

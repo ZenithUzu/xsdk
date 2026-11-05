@@ -38,3 +38,12 @@ Se incorporaron las mejoras del original conservando la interfaz EN/ES/PT y las 
 ## Português
 
 As melhorias do upstream foram incorporadas preservando a interface EN/ES/PT e as receitas do Windows. Recompile o SDK e os projetos dependentes. Os testes acima validam compilação e linkedição no Windows, não a execução no Xbox. O adaptador USB Ethernet continua como trabalho planejado; Mono é uma biblioteca externa.
+
+
+## Second integration — 2026-11-05
+
+Upstream now includes `74dfcca8d21c5fe83b59079ef0e032e62994c1a2`, 17 commits after `5f6dc72`. The Windows fork retains its native DLL/suffix handling, presentation recovery changes, interface and build orchestration.
+
+Implemented upstream code includes `gl_VertexIndex` lowering, matrix/scalar and matrix-column lowering, unordered float-comparison handling, more useful shader diagnostics, hierarchical-depth restrictions for narrower resolves and support for four presentation front buffers. These are not a measured FPS claim for CoopDX. GameCube/THP/Colosseum milestone documents are plans; their presence does not make this GUI a GameCube game builder.
+
+The GUI now integrates original updates through a private Git worktree and backup overlay. Two synthetic Git integration tests cover clean merging with Windows document/compatibility preservation and refusal of runtime conflicts before changing the installed SDK. Together with cancellation, source replacement and previous-setting tests, 59 host tests passed. No new SDK library, SDL3 or game build was run during this integration; native/console behavior of this SDK revision remains to be validated by a separate build/test.

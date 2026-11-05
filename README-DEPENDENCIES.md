@@ -86,3 +86,18 @@ Si cancelas durante una descarga o sustitución de fuentes, puede quedar una eta
 **English:** selected-component updates can keep their current destination. ZIP source overlays back up changed files and preserve build caches/unchanged timestamps. Explicit Git overwrite saves tracked edits in stash and retains fast-forward checks. Compiler repair reuses matching build caches or rebuilds when necessary, after a backup. Windows cancellation terminates the owned process group, including children left by an exited launcher.
 
 **Português:** a atualização mantém o destino selecionado. Fontes ZIP são substituídas com backup dos arquivos alterados, preservando caches e datas dos arquivos iguais. Alterações Git rastreadas vão para stash no modo explícito. O compilador reutiliza cache compatível ou precisa de uma reconstrução, com backup. Cancelar termina o grupo de processos da operação no Windows.
+
+
+## Actualizaciones del xSDK original desde la misma herramienta
+
+En **Fuentes y dependencias**, pulsa **Integrar novedades del original**. También puedes seleccionar **xSDK original** en el inventario y usar **Instalar / actualizar seleccionado**. La consulta de versiones remotas incluye ahora el original `https://github.com/xenosworks/xsdk`, rama `main`.
+
+La acción obtiene el fork Windows configurado y el original en una caché Git. Prepara la combinación en un worktree separado, conserva los cambios de Windows y aplica las fuentes al SDK seleccionado con respaldo y conservación de cachés. Después ejecuta la construcción incremental del SDK. No requiere otro EXE para cada actualización de fuentes del original. El SDK original solo no se instala encima perdiendo las adaptaciones de Windows.
+
+Los conflictos de documentación conocidos conservan la presentación Windows y los avisos de ambas ramas; el README original queda en `README-UPSTREAM.md`. Un conflicto en código, Makefile u otro archivo no resuelto **detiene la integración antes de tocar el SDK instalado** y muestra la carpeta para revisión. No se puede garantizar una actualización automática sin conflictos frente a cambios futuros de API o del flujo de construcción; en esos casos hace falta una adaptación del fork. No se publica nada automáticamente en GitHub ni se suben datos del usuario.
+
+El SDK registra ambas revisiones en `.xsdk-upstream.json`. Si el destino es un checkout Git, la aplicación del snapshot puede verse como diferencias en su working tree; sus commits no se reescriben. Conserva los respaldos. Las actualizaciones se ejecutan solo al pulsar el botón; la consulta de versiones al arrancar sigue siendo opcional y de lectura.
+
+**English:** use **Integrate original SDK updates** to combine the original main branch with the configured Windows fork in a private Git worktree, preserve Windows adaptations and apply/build the SDK incrementally in place. Runtime conflicts stop before modifying the installed source. Routine source updates do not need another GUI executable; incompatible upstream changes may still require maintenance.
+
+**Português:** use **Integrar novidades do SDK original** para combinar a branch main do original com o fork Windows numa cópia Git separada, preservar as adaptações e aplicar/compilar o SDK incrementalmente. Conflitos de código interrompem a operação antes de alterar a instalação. Atualizações comuns não exigem outro EXE; mudanças incompatíveis ainda podem precisar de manutenção.

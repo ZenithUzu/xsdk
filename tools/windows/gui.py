@@ -19,6 +19,7 @@ from manager import inspect
 from game_package import package_game
 from settings import recover, legacy_profiles
 from process_tree import ProcessTree
+from upstream import UPSTREAM_REPOSITORY
 from dependencies import DEFAULTS as SOURCE_DEFAULTS, SOURCE_FIELDS, dependency_plan, github_source
 
 FROZEN = getattr(sys, "frozen", False)
@@ -198,6 +199,7 @@ class App:
                               ("Construir SDL3", lambda: self.start("deps_build_sdl")),
                               ("Preparar todo lo faltante", lambda: self.start("deps_prepare")),
                               ("Actualizar en la misma ruta con respaldo", lambda: self.start("deps_update_inplace")),
+                              ("Integrar novedades del original", lambda: self.start("deps_update_upstream")),
                               ("Actualizar/reinstalar compilador actual", lambda: self.start("deps_repair_compiler")),
                               ("Construir compilador en destino nuevo", self.new_compiler),
                               ("Construir glslang", lambda: self.start("deps_build_shaders")))
@@ -209,6 +211,8 @@ class App:
             row=len(source_labels) + 6, column=0, sticky="w")
         ttk.Button(source_grid, text="Ver receta del compilador", command=self.open_compiler_recipe).grid(
             row=len(source_labels) + 6, column=1, sticky="w")
+        ttk.Button(source_grid, text="Repositorio original", command=lambda: webbrowser.open(
+            UPSTREAM_REPOSITORY.removesuffix(".git"))).grid(row=len(source_labels) + 6, column=2, sticky="w")
         self.output = tk.Text(panel, wrap="word", font=("Consolas", 10), state="disabled")
         bottom = ttk.Frame(panel)
         bottom.pack(side="bottom", fill="x", pady=(8, 0))
@@ -342,6 +346,8 @@ class App:
             self.start("deps_update_sdk")
         elif key == "sdl":
             self.start("deps_update_sdl")
+        elif key == "upstream":
+            self.start("deps_update_upstream")
         elif key == "dependencies":
             self.start("dependencies")
 

@@ -57,3 +57,10 @@ Windows operations use an unnamed Job Object owned by the GUI, with kill-on-clos
 Explicit in-place source replacement uses a separate Git snapshot/cache, validates component markers and relative destination paths, refuses escaping linked paths and backs up changed files before replacement. Unchanged bytes retain their timestamps. Only files previously recorded as managed source may be pruned, with a backup; untracked user files and known build/data directories are kept. Explicit Git updates stash tracked edits instead of deleting them. Interrupted source updates can leave a partial stage that must be retried before building.
 
 Compiler repair backs up the selected compiler and checks recorded recipe/prefix plus cached Makefile prefixes before cached installation. Without matching cache it uses a separate build cache and the same install destination; a full build may be necessary. These installation actions remain user-triggered. No real dependency/game build or installation was performed during the regression checks for this extension.
+
+
+## Original-upstream integration
+
+Original updates are fetched only through an explicit action or read-only version check. A private cache/worktree combines the configured Windows fork with the fixed original xenosworks/xsdk main branch. It never pushes to the user's GitHub fork. Runtime conflicts stop before the destination overlay; only the known README/rules/hardware-document conflicts have a conservative automatic resolution. The live source overlay retains the existing backup/path checks and build caches. Successful private worktrees are removed only after verifying that their resolved path stays under the updater's own worktree directory; conflicting ones remain for review.
+
+59 host tests passed, including synthetic local Git merge/conflict tests. Those tests use no network or SDK/game build. Original C/runtime changes are imported source; no new host DLL or console validation is asserted by this integration. Future upstream changes are not implicitly certified by an earlier scan.

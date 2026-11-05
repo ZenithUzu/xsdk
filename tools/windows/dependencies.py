@@ -11,12 +11,13 @@ from urllib.parse import urlsplit
 
 from processes import hidden_options
 from source_update import update_zip_source
+from upstream import integrate_original
 from manager import load_state, fingerprint, mark
 from build_plan import msys_path
 
 ACTIONS = ('fetch_sdk', 'fetch_sdl', 'build_sdk', 'build_sdl', 'prepare', 'update_all',
            'build_compiler', 'build_shaders', 'update_inplace', 'update_sdk', 'update_sdl',
-           'update_shaders', 'repair_compiler')
+           'update_shaders', 'repair_compiler', 'update_upstream')
 SOURCE_FIELDS = ('sdk_repo', 'sdk_ref', 'sdl_repo', 'sdl_ref', 'sdl_source', 'shader_repo', 'shader_ref', 'search_root')
 DEFAULTS = {'sdk_repo': 'https://github.com/ZenithUzu/xsdk.git', 'sdk_ref': 'main',
             'sdl_repo': 'https://github.com/xenosworks/SDL-xenon.git', 'sdl_ref': 'xenon',
@@ -155,6 +156,9 @@ def setup(action, values):
     print('XSDK_NEW_ROOT=' + str(sdk), flush=True)
     if action == 'fetch_sdk':
         return
+    if action == 'update_upstream':
+        url, branch = github_source(values['sdk_repo'], values['sdk_ref'])
+        integrate_original(git, sdk, url, branch, work, execute)
     if action in ('fetch_sdl', 'build_sdl', 'prepare', 'update_all', 'update_inplace', 'update_sdl'):
         checkout(git, source, values['sdl_repo'], values['sdl_ref'], update, inplace, work, 'sdl')
         if not (source / 'include/SDL3/SDL.h').is_file():
@@ -230,7 +234,7 @@ def setup(action, values):
     if action in ('build_shaders', 'update_shaders'):
         return
     if (not (sdk / 'build/libxsdk.a').is_file() or not (sdk / 'build/host/libxsc.dll').is_file()
-            or action in ('build_sdk', 'update_all', 'update_inplace', 'update_sdk')):
+            or action in ('build_sdk', 'update_all', 'update_inplace', 'update_sdk', 'update_upstream')):
         stage('sdk')
     if action == 'prepare' and (build / 'SDL3Config.cmake').is_file() and (build / 'libSDL3.a').is_file():
         print('Existing SDL3 build kept; no rebuild requested.', flush=True)

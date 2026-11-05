@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "windows_revision": "c2d4640",
+  "upstream_revision": "74dfcca8d21c5fe83b59079ef0e032e62994c1a2",
+  "upstream_repository": "https://github.com/xenosworks/xsdk.git",
+  "upstream_branch": "main"
+}

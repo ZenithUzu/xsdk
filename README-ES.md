@@ -39,6 +39,8 @@ Las preferencias y logs quedan en `data/`. **Actualizar fuentes y reconstruir** 
 
 **El ZIP contiene:** interfaz y runtime, fuentes públicas, licencias, hashes e informes de validación/antivirus. **No contiene:** MSYS2, compilador PowerPC precompilado, ROM, assets privados ni un juego listo para jugar. El panel prepara las herramientas después de instalar MSYS2.
 
+La misma herramienta ya integra novedades del xSDK original conservando los cambios de Windows. Incluye cancelación corregida y actualización en la misma ruta con respaldo. [Cómo actualizar desde el original](README-DEPENDENCIES.md#actualizaciones-del-xsdk-original-desde-la-misma-herramienta).
+
 ## Características
 
 - Detecta instalaciones en las rutas guardadas, ubicaciones habituales, `XSDK_TOOLCHAIN` y PATH.
