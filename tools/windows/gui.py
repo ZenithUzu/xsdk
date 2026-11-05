@@ -322,7 +322,8 @@ class App:
         except Exception as error:
             code = 1
             self.events.put("No se pudo inspeccionar: " + str(error) + "\n")
-        self.events.put((code, "Consulta sin compilación; vuelve a comprobar después de actualizar"))
+        self.events.put((130 if self.cancelled.is_set() else code,
+                         "Consulta sin compilación; vuelve a comprobar después de actualizar"))
 
     def update_selected(self):
         if self.busy:
