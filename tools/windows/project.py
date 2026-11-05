@@ -6,6 +6,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+from processes import hidden_options
+
 
 def recipe_plan(project, sdk, compiler, msys, work, sdl="", rom="", jobs=4,
                 build_type="Release", glslang="", restore_inputs=False):
@@ -42,7 +44,7 @@ def recipe_plan(project, sdk, compiler, msys, work, sdl="", rom="", jobs=4,
     output = Path(work).resolve() / "projects" / root.name
     system = Path(os.environ.get("SystemRoot", "C:/Windows"))
     powershell = system / "System32/WindowsPowerShell/v1.0/powershell.exe"
-    command = [str(powershell), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script),
+    command = [str(powershell), "-NoProfile", "-ExecutionPolicy", "RemoteSigned", "-File", str(script),
                "-Game", "-XsdkRoot", str(sdk), "-Toolchain", str(compiler), "-MsysRoot", str(msys),
                "-OutDir", str(output), "-Jobs", str(int(jobs)), "-BuildType", build_type]
     if restore_inputs:
@@ -87,7 +89,7 @@ def main():
         return 0
     if os.name != "nt":
         raise ValueError("This build recipe runs on Windows")
-    return subprocess.run(command, env=environment, check=False).returncode
+    return subprocess.run(command, env=environment, check=False, **hidden_options()).returncode
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from processes import hidden_options
 from options import BUILD_TYPES, MAKE_TARGETS
 
 
@@ -17,7 +18,7 @@ def run(target, prefix, jobs, build_type="Release", sdl=""):
         print("Negative tests: these deliberately broken XEX files must FAIL on the console.", flush=True)
     subprocess.run(["make", target, "-j" + str(jobs),
                     "TOOLCHAIN=" + str(Path(prefix) / "bin/powerpc-xsdk-elf-"),
-                    "PYTHON=python3", "HOST_CC=gcc", "SAMPLE_BUILD_TYPE=" + build_type, "SDL3_DIR=" + sdl], check=True)
+                    "PYTHON=python3", "HOST_CC=gcc", "SAMPLE_BUILD_TYPE=" + build_type, "SDL3_DIR=" + sdl], check=True, **hidden_options())
     print("Build complete. A successful build does not mean the console checks have passed.")
 
 

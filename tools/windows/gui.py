@@ -10,6 +10,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
+from processes import hidden_options
 from build_plan import plan
 from i18n import LANGUAGES, translate
 from options import BUILD_TYPES, MAKE_TARGETS
@@ -130,7 +131,7 @@ class App:
             entry.grid(row=row, column=1, sticky="ew", padx=10)
             if key in ("msys", "sdk", "prefix", "work", "project", "sdl", "glslang", "rom", "pc_game", "package_output"):
                 ttk.Button(grid, text="Elegir…", command=lambda name=key: self.choose(name)).grid(row=row, column=2)
-        ttk.Checkbutton(grid, text="Actualizar automáticamente al abrir (solo copias Git limpias)",
+        ttk.Checkbutton(grid, text="Consultar actualizaciones al abrir (sin instalar)",
                         variable=self.fields["auto_update"], onvalue="1", offvalue="0",
                         command=self.save_preferences).grid(row=len(labels), column=1, sticky="w")
         ttk.Checkbutton(grid, text="Restaurar entradas heredadas locales (solo con permiso para usarlas)",
@@ -166,7 +167,7 @@ class App:
         window.protocol("WM_DELETE_WINDOW", self.close)
         window.after(100, self.poll)
         window.after(200, lambda: self.scan(False))
-        if self.fields["auto_update"].get() == "1":
+        if self.fields["auto_update"].get() == "1" and "--startup-test" not in sys.argv:
             window.after(1500, self.auto_update)
 
     def tr(self, text):
@@ -208,7 +209,7 @@ class App:
         if self.busy:
             self.window.after(500, self.auto_update)
         else:
-            self.start("update")
+            self.scan(True)
 
     def scan(self, online=False):
         if self.busy:
@@ -325,8 +326,7 @@ class App:
         try:
             with log_path.open("w", encoding="utf-8") as log:
                 self.process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                                env=env, encoding="utf-8", errors="replace",
-                                                creationflags=subprocess.CREATE_NO_WINDOW)
+                                                env=env, encoding="utf-8", errors="replace", **hidden_options())
                 if self.cancelled.is_set():
                     self.cancel()
                 for line in self.process.stdout:
@@ -397,8 +397,9 @@ class App:
         self.cancelled.set()
         process = self.process
         if process and process.poll() is None:
-            subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"], check=False,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run([str(Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32/taskkill.exe"),
+                            "/PID", str(process.pid), "/T", "/F"], check=False,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **hidden_options())
 
     def results(self):
         project = Path(self.fields["project"].get())
@@ -428,7 +429,36 @@ def main():
     if os.name != "nt":
         raise SystemExit("The desktop interface runs on Windows.")
     root = tk.Tk()
-    if len(sys.argv) == 3 and sys.argv[1] == "--self-test":
+    if len(sys.argv) == 3 and sys.argv[1] == "--startup-test":
+        import manager
+        root.withdraw()
+        commands = []
+        original = manager.command
+        def recorded(args, env=None):
+            commands.append([str(arg) for arg in args])
+            return original(args, env)
+        manager.command = recorded
+        app = App(root)
+        app.fields["auto_update"].set("0")
+        app.save_preferences = lambda: None
+        deadline = time.monotonic() + 60
+        def finish():
+            if not app.busy and app.inventory.get_children():
+                forbidden = {"fetch", "clone", "merge", "ls-remote", "install"}
+                passed = not any(forbidden.intersection(command) for command in commands)
+                result = {"passed": passed, "frozen": FROZEN, "command_count": len(commands),
+                          "commands": commands, "inventory_rows": len(app.inventory.get_children()),
+                          "startup_network": False, "startup_installs": False}
+                Path(sys.argv[2]).write_text(json.dumps(result, indent=2), encoding="utf-8")
+                root.destroy()
+            elif time.monotonic() > deadline:
+                Path(sys.argv[2]).write_text('{"passed": false, "timeout": true}', encoding="utf-8")
+                root.destroy()
+            else:
+                root.after(100, finish)
+        root.after(300, finish)
+        root.mainloop()
+    elif len(sys.argv) == 3 and sys.argv[1] == "--self-test":
         root.withdraw()
         root.after = lambda *args: None
         app = App(root)

@@ -5,6 +5,7 @@ import sys
 import zipfile
 from pathlib import Path
 
+from processes import hidden_options
 from check_tools import check
 from manager import load_state
 
@@ -19,7 +20,7 @@ def package(sdk, prefix, output):
         raise ValueError("Conserva las fuentes del toolchain y glslang en la carpeta de trabajo para distribuirlas")
     if not (prefix / "bin/glslang.exe").is_file():
         raise ValueError("Construye Shaders primero")
-    tracked = subprocess.check_output(["git", "-C", str(sdk), "ls-files", "-z"]).split(b"\0")
+    tracked = subprocess.check_output(["git", "-C", str(sdk), "ls-files", "-z"], **hidden_options()).split(b"\0")
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(".zip.partial")
     try:
@@ -39,7 +40,7 @@ def package(sdk, prefix, output):
                                            part.startswith("build") for part in path.relative_to(source).parts)]
             written = set()
             for repository in repositories:
-                names = subprocess.check_output(["git", "-C", str(repository), "ls-files", "-z"]).split(b"\0")
+                names = subprocess.check_output(["git", "-C", str(repository), "ls-files", "-z"], **hidden_options()).split(b"\0")
                 for name in names:
                     if not name:
                         continue

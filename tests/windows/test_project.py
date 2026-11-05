@@ -49,6 +49,8 @@ class RecipeTests(unittest.TestCase):
             command, environment, output = self.plan()
         self.assertEqual(command[command.index('-File') + 1], str(self.project / 'build.ps1'))
         self.assertEqual(command[command.index('-BuildType') + 1], 'Release')
+        self.assertEqual(command[command.index('-ExecutionPolicy') + 1], 'RemoteSigned')
+        self.assertNotIn('Bypass', command)
         self.assertTrue(environment["PSModulePath"].endswith("Modules"))
         self.assertNotIn("PowerShell/Modules;", environment["PSModulePath"])
         self.assertNotIn('-RestoreInheritedInputs', command)

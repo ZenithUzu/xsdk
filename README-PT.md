@@ -26,7 +26,7 @@ Este fork experimental do [xenosworks/xsdk](https://github.com/xenosworks/xsdk) 
 - Oferece Release, Debug, RelWithDebInfo e MinSizeRel, com controle de tarefas simultâneas.
 - Alterna entre inglês, espanhol e português e salva o idioma e os caminhos.
 - Exibe logs ao vivo, permite cancelar tarefas e abrir resultados.
-- Consulta atualizações e atualiza componentes separadamente. A atualização automática do código é opcional e vem desativada.
+- Consulta atualizações e atualiza componentes separadamente. A consulta de atualizações ao abrir é opcional, vem desativada e nunca instala alterações.
 - Gera pacotes portáteis com fontes correspondentes, licenças e checksums SHA-256.
 
 Abrir a interface apenas verifica as ferramentas; não reconstrói GCC, newlib ou shaders automaticamente. Encontrar uma versão não comprova que ela contém os patches necessários para Xenon.

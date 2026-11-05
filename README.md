@@ -26,7 +26,7 @@ This experimental Windows fork of [xenosworks/xsdk](https://github.com/xenoswork
 - Choose Release, Debug, RelWithDebInfo or MinSizeRel and control parallel jobs.
 - Switch between English, Spanish and Portuguese; keep your language and paths saved.
 - Read live compiler logs, cancel tasks and open build outputs.
-- Check for updates and update individual components. Automatic source updates are optional and off by default.
+- Check for updates and update individual components. Optional startup update checks are read-only and off by default.
 - Build portable tool packages with corresponding sources, licenses and SHA-256 checksums.
 
 Opening the interface scans your tools. It does not automatically rebuild GCC, newlib or shaders. A detected version does not prove that a tool contains the required Xenon patches.

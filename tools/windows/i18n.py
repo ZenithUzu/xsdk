@@ -4,6 +4,9 @@ LANGUAGES = {"en": "English", "es": "Español", "pt": "Português"}
 
 # Existing Spanish messages stay the keys so saved settings and backend errors remain compatible.
 MESSAGES = [
+    ("Consultar actualizaciones al abrir (sin instalar)",
+     "Check updates on startup (never install)",
+     "Consultar atualizações ao abrir (sem instalar)"),
     ("Elige una carpeta NUEVA de salida del juego en Rutas y proyecto.",
      "Choose a NEW game output folder in Paths and project.",
      "Escolha uma NOVA pasta de saída do jogo em Caminhos e projeto."),

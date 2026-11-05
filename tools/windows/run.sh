@@ -18,7 +18,6 @@ export PATH="$prefix/bin:/ucrt64/bin:/usr/bin:$PATH"
 if [[ -n "${XSDK_GLSLANG_OVERRIDE:-}" ]]; then
 	shader_path=$(cygpath -u "$XSDK_GLSLANG_OVERRIDE")
 	export PATH="$(dirname "$shader_path"):$PATH"
-	if [[ "$action" == project ]]; then extra+=("-DXSDK_GLSLANG=$(cygpath -m "$shader_path")"); fi
 fi
 if [[ "$action" == shaders_update ]]; then
 	python3 tools/windows/update.py "$work/glslang" shaders
@@ -95,6 +94,9 @@ case "$action" in
 			exit 0
 		fi
 		[[ "$action" != project_check ]] || { echo 'Choose a port root containing xsdk-project.json' >&2; exit 1; }
+		if [[ -n "${XSDK_GLSLANG_OVERRIDE:-}" ]]; then
+			extra+=("-DXSDK_GLSLANG=$(cygpath -m "$shader_path")")
+		fi
 		[[ -f "$project/CMakeLists.txt" ]] || { echo 'Select a CMake project' >&2; exit 1; }
 		[[ -s build/host/libxsc.dll && -s build/libxsdk.a ]] || { echo 'Build the SDK first' >&2; exit 1; }
 		cmake -S "$project" -B "$project/build-xsdk-windows" -G Ninja \

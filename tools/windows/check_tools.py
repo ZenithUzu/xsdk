@@ -4,6 +4,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from processes import hidden_options
+
 
 def check(prefix):
     bin_dir = Path(prefix) / "bin"
@@ -15,12 +17,12 @@ def check(prefix):
             if stream.read(2) != b"MZ":
                 raise RuntimeError(f"Not a Windows PE executable: {tool}")
     compiler = bin_dir / "powerpc-xsdk-elf-gcc.exe"
-    target = subprocess.check_output([str(compiler), "-dumpmachine"], text=True).strip()
+    target = subprocess.check_output([str(compiler), "-dumpmachine"], text=True, **hidden_options()).strip()
     if target != "powerpc-xsdk-elf":
         raise RuntimeError(f"Wrong target compiler: {target}")
-    subprocess.run([str(compiler), "--version"], check=True)
+    subprocess.run([str(compiler), "--version"], check=True, **hidden_options())
     cxx = bin_dir / "powerpc-xsdk-elf-g++.exe"
-    if subprocess.check_output([str(cxx), "-dumpmachine"], text=True).strip() != target:
+    if subprocess.check_output([str(cxx), "-dumpmachine"], text=True, **hidden_options()).strip() != target:
         raise RuntimeError("C and C++ compilers target different platforms")
     with tempfile.TemporaryDirectory(prefix="xsdk-check-") as folder:
         source = Path(folder) / "check.cpp"
@@ -31,8 +33,8 @@ def check(prefix):
             "int check() { try { throw 7; } catch (int x) { return x + value.load(); } }\n",
             encoding="utf-8")
         subprocess.run([str(cxx), "-std=c++23", "-Wall", "-Wextra", "-Werror", "-c", str(source),
-                        "-o", str(output)], check=True)
-        subprocess.run([str(bin_dir / "powerpc-xsdk-elf-objdump.exe"), "-f", str(output)], check=True)
+                        "-o", str(output)], check=True, **hidden_options())
+        subprocess.run([str(bin_dir / "powerpc-xsdk-elf-objdump.exe"), "-f", str(output)], check=True, **hidden_options())
     print("PASS: native tools, powerpc-xsdk-elf C/C++23 compilation and C++ headers")
 
 

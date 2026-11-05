@@ -8,11 +8,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+from processes import hidden_options
+
 
 def command(args, env=None):
     try:
         result = subprocess.run([str(arg) for arg in args], env=env, capture_output=True, text=True,
-                                errors="replace", timeout=15)
+                                errors="replace", timeout=15, **hidden_options())
         return result.stdout.strip() if result.returncode == 0 else ""
     except (OSError, subprocess.SubprocessError):
         return ""

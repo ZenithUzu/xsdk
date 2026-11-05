@@ -4,6 +4,8 @@ import sys
 import time
 from pathlib import Path
 
+from processes import hidden_options
+
 REPOSITORY = "https://github.com/ZenithUzu/xsdk.git"
 
 
@@ -18,7 +20,7 @@ def update(folder, component="sdk", copies=""):
         if destination.exists():
             raise ValueError("La carpeta de actualización ya existe")
         destination.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "clone", "--branch", "main", REPOSITORY, str(destination)], check=True)
+        subprocess.run(["git", "clone", "--branch", "main", REPOSITORY, str(destination)], check=True, **hidden_options())
         print("XSDK_NEW_ROOT=" + str(destination.resolve()), flush=True)
         print("Copia nueva instalada. La copia ZIP original se conserva. Abre Iniciar-Windows.cmd de la nueva carpeta.")
         return
@@ -26,7 +28,7 @@ def update(folder, component="sdk", copies=""):
         raise ValueError("Esta copia es ZIP. Usa Instalar-Windows.ps1 en una carpeta nueva para tener actualizaciones Git.")
 
     def git(*args):
-        return subprocess.check_output(["git", "-C", str(folder), *args], text=True).strip()
+        return subprocess.check_output(["git", "-C", str(folder), *args], text=True, **hidden_options()).strip()
 
     origin = git("remote", "get-url", "origin").rstrip("/")
     if origin not in (repository, repository.removesuffix(".git"), repository.replace("https://github.com/", "git@github.com:")):

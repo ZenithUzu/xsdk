@@ -37,8 +37,7 @@ Se conservan el SDK original, su documentación, ejemplos, licencias y créditos
 - Conserva el acceso a pruebas avanzadas del SDK, logs, cancelación y resultados de construcción.
 - Incluye un instalador PowerShell y un generador de paquetes portables con fuentes, licencias y SHA-256.
 
-**Al abrir, detecta y comprueba; no reconstruye GCC, newlib ni shaders.** La actualización automática del código
-es opcional y viene desactivada. No necesitas esperar un paquete precompilado para usar tus herramientas actuales.
+**Al abrir, detecta y comprueba; no reconstruye GCC, newlib ni shaders.** La consulta de actualizaciones al abrir es opcional, viene desactivada y no instala cambios. No necesitas esperar un paquete precompilado para usar tus herramientas actuales.
 
 ## EXE portable
 

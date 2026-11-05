@@ -2,7 +2,7 @@
 
 ## Español
 
-Descomprime el ZIP completo en una carpeta con permiso de escritura y abre **xSDK-Windows.exe**. La interfaz incluye su propio Python/Tkinter; no necesitas instalar Python para abrirla. Elige **Español** arriba. Las preferencias y logs se guardan en `data/`, junto al EXE. No se solicitan permisos de administrador.
+Descomprime el ZIP completo en una carpeta con permiso de escritura y abre **xSDK-Windows.exe**. Conserva la carpeta `_internal/` junto al EXE: contiene las dependencias visibles y evita autoextraerlas a temporales al arrancar. La interfaz incluye su propio Python/Tkinter; no necesitas instalar Python para abrirla. Elige **Español** arriba. Las preferencias y logs se guardan en `data/`, junto al EXE. No se solicitan permisos de administrador.
 
 **Portable no significa que el compilador venga incluido.** El paquete incluye la interfaz, sus fuentes, las fuentes públicas de xSDK y las licencias. Para construir XEX necesitas MSYS2 UCRT64, el compilador PowerPC, las bibliotecas construidas de xSDK y SDL3 Xenon, igual que con la versión fuente. Selecciona sus rutas en la interfaz. Si faltan bibliotecas del SDK, usa **Reconstruir solo SDK**. La [guía de Windows](https://github.com/ZenithUzu/xsdk/blob/main/README-WINDOWS.md) y los README de `sdk/` explican su preparación.
 
@@ -22,7 +22,7 @@ La creación del paquete no comprueba FPS, audio, gráficos, mods o conexión en
 
 ## English
 
-Extract the whole ZIP into a writable folder and open **xSDK-Windows.exe**. The GUI includes Python/Tkinter. Select **English** at the top. Settings and logs stay in `data/` beside the EXE.
+Extract the whole ZIP into a writable folder and open **xSDK-Windows.exe**. Keep `_internal/` beside the EXE. This folder build includes Python/Tkinter and does not self-extract on startup. Select **English** at the top. Settings and logs stay in `data/` beside the EXE.
 
 MSYS2 UCRT64, the PowerPC compiler, built xSDK libraries and SDL3 Xenon remain external build prerequisites. Public SDK source is included in `sdk/`; choose your installed tools or build the missing SDK component. See the Windows and project guides inside `sdk/`.
 
@@ -32,7 +32,7 @@ No ROM, game assets, desktop executable or reference XEX is bundled. Producing a
 
 ## Português
 
-Extraia o ZIP completo para uma pasta com permissão de escrita e abra **xSDK-Windows.exe**. A interface inclui Python/Tkinter. Selecione **Português** no topo. Configurações e logs ficam em `data/`, ao lado do EXE.
+Extraia o ZIP completo para uma pasta com permissão de escrita e abra **xSDK-Windows.exe**. Mantenha `_internal/` ao lado do EXE. A pasta inclui Python/Tkinter e não usa autoextração ao abrir. Selecione **Português** no topo. Configurações e logs ficam em `data/`, ao lado do EXE.
 
 MSYS2 UCRT64, compilador PowerPC, bibliotecas compiladas do xSDK e SDL3 Xenon continuam como requisitos externos. As fontes públicas do SDK estão em `sdk/`; indique suas ferramentas ou compile o componente ausente. Consulte os guias dentro de `sdk/`.
 
@@ -53,3 +53,12 @@ python -m venv build/exe-env
 Choose a new output directory. The builder packages Git-indexed source files only, plus the GUI executable and runtime license notices. No local SDK binaries, game inputs or saved preferences are copied. Review staged sources before building. Use `xSDK-Windows.exe --self-test C:/build/portable-smoke.json` to run a hidden Tk/language smoke test of the frozen runtime.
 
 Keep `LICENSE`, `THIRD_PARTY_NOTICES.md`, `licenses/` and `sdk/` with the portable distribution. The executable uses a PyInstaller bootloader; its license and distribution exception are included. The tool's original credits remain in the source and the Credits dialog.
+
+
+## Console windows and security review
+
+Native subprocesses use `CREATE_NO_WINDOW` and hidden startup-window settings on Windows. The output is still captured in the visible UI/logs. Startup detection queries local tools; optional startup update checks are read-only and never install updates. Install/build actions require selecting their button.
+
+The default builder uses a folder layout (`--onedir`), so dependencies remain visible in `_internal/`. A single self-extracting EXE remains an explicit build option with `--onefile`. Preserve the whole portable folder. Hashes for the EXE and its runtime dependencies are in `SHA256SUMS.txt`; a ZIP checksum is supplied alongside the downloadable archive.
+
+See [the source-review scope](SECURITY-REVIEW.md). Local antivirus results apply only to the tested artifact and definitions; neither a scan nor a hash guarantees absence of malware. This build is not Authenticode-signed. No antivirus exclusions, protection changes or administrator startup are requested.

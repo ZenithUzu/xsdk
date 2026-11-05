@@ -5,6 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from processes import hidden_options
 from options import BUILD_TYPES, cmake_options
 
 
@@ -23,8 +24,8 @@ def build(sdk, prefix, jobs, build_type, sdl="", *extra):
             args.append("-DXSDK_GLSLANG=" + os.environ["XSDK_GLSLANG_OVERRIDE"])
         if sdl and name == "sdl3":
             args.append("-DSDL3_DIR=" + str(Path(sdl).resolve()))
-        subprocess.run(args + extra, check=True)
-        subprocess.run(["cmake", "--build", str(output), "--parallel", str(jobs)], check=True)
+        subprocess.run(args + extra, check=True, **hidden_options())
+        subprocess.run(["cmake", "--build", str(output), "--parallel", str(jobs)], check=True, **hidden_options())
         if name != "sdl3" and not (output / (name + ".xex")).is_file():
             raise ValueError("Missing sample output: " + name)
         if name == "sdl3" and sdl and not (output / "sdl3.xex").is_file():
