@@ -18,7 +18,7 @@ This experimental Windows fork of [xenosworks/xsdk](https://github.com/xenoswork
 
 ## Download and quick start
 
-**[Download xSDK Windows Portable v3 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3/xSDK-Windows-Portable-v3.zip)** · [Release notes and SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3)
+**[Download xSDK Windows Portable v3.3 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3/xSDK-Windows-Portable-v3.3.zip)** · [Release notes and SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3.3)
 
 1. Extract the **entire ZIP** into a writable folder. Keep `_internal/`, `sdk/` and the license files beside **xSDK-Windows.exe**. Open that EXE; no separate Python installation is required for the interface.
 2. Install [MSYS2](https://www.msys2.org/) if missing and update it from UCRT64 with `pacman -Syu`. MSYS2 remains the external build environment, not a bundled compiler.

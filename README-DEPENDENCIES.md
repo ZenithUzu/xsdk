@@ -69,7 +69,7 @@ Las rutas recuperadas deben existir y tener los archivos esperados. Se conservan
 
 El recuadro de información muestra de qué archivo se recuperaron las rutas, los resultados de la detección, el inicio y fin de operaciones y los comandos. Un aviso de actividad cada 15 segundos no es una estimación de porcentaje. Las salidas del compilador se conservan tal como llegan.
 
-Estos cambios se aplicaron a las fuentes y al lanzador CMD local. No se recompiló ni reemplazó el EXE del Release v3.
+La versión portable v3.3 incorpora también estos cambios, además del lanzador CMD.
 
 
 ## Actualizar o reinstalar en la ruta existente

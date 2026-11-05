@@ -25,7 +25,7 @@ Se conservan el SDK original, su documentación, ejemplos, licencias y créditos
 
 ## Descargar y empezar
 
-**[Descargar xSDK Windows Portable v3 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3/xSDK-Windows-Portable-v3.zip)** · [Release y SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3)
+**[Descargar xSDK Windows Portable v3.3 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3/xSDK-Windows-Portable-v3.3.zip)** · [Release y SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3.3)
 
 1. Descomprime **todo el ZIP** en una carpeta con permiso de escritura. Conserva `_internal/`, `sdk/` y las licencias junto a **xSDK-Windows.exe**. Abre ese EXE: la interfaz no necesita que instales Python.
 2. Instala [MSYS2](https://www.msys2.org/) si falta y actualízalo desde UCRT64 con `pacman -Syu`. Sigue siendo el entorno externo de construcción.
