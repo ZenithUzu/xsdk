@@ -103,6 +103,24 @@ class DependencyTests(unittest.TestCase):
             setup('build_compiler', self.values)
         execute.assert_not_called()
 
+    def test_reinstall_reuses_matching_compiler_cache_in_current_prefix(self):
+        from dependencies import fingerprint
+        sdk, prefix = Path(self.values['sdk']), Path(self.values['prefix'])
+        (prefix / 'bin/powerpc-xsdk-elf-gcc.exe').touch()
+        cached = self.root / 'original-compiler-cache'
+        for stage in ('binutils', 'newlib', 'gcc'):
+            directory = cached / 'build' / stage
+            directory.mkdir(parents=True)
+            (directory / 'Makefile').write_text('prefix = ' + str(prefix) + '\n')
+        state = {'toolchain': {'prefix': str(prefix.resolve()), 'recipe': fingerprint(sdk, 'toolchain'),
+                               'source_work': str(cached)}}
+        with patch('dependencies.load_state', return_value=state), patch('dependencies.execute') as execute:
+            setup('repair_compiler', self.values)
+        commands = [list(map(str, call.args[0])) for call in execute.call_args_list]
+        self.assertEqual(sum('-C' in command for command in commands), 3)
+        self.assertFalse(any('toolchain_fresh' in command for command in commands))
+        self.assertTrue(list((Path(self.values['work']) / 'compiler-backups').glob('compiler-*')))
+
     def test_update_refuses_dirty_checkout(self):
         source = self.root / 'checkout'
         (source / '.git').mkdir(parents=True)
@@ -110,6 +128,17 @@ class DependencyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Local changes'):
                 checkout('git', source, 'https://github.com/team/repo', 'main', update=True)
         self.assertFalse(any('fetch' in call.args[0] for call in execute.call_args_list))
+
+    def test_explicit_inplace_git_update_backs_up_tracked_edits_without_cleaning(self):
+        source = self.root / 'checkout'
+        (source / '.git').mkdir(parents=True)
+        results = ['https://github.com/team/repo.git', ' M source.c', 'main', '', '', 'backup-stash', '']
+        with patch('dependencies.execute', side_effect=results) as execute:
+            checkout('git', source, 'https://github.com/team/repo', 'main', update=True, overwrite=True)
+        commands = [call.args[0] for call in execute.call_args_list]
+        self.assertTrue(any('stash' in command and 'push' in command for command in commands))
+        self.assertTrue(any('--ff-only' in command for command in commands))
+        self.assertFalse(any('clean' in command or '--hard' in command for command in commands))
 
     def test_download_refuses_overwriting_unrelated_checkout(self):
         source = self.root / 'checkout'

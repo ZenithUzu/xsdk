@@ -10,9 +10,13 @@ import time
 from urllib.parse import urlsplit
 
 from processes import hidden_options
+from source_update import update_zip_source
+from manager import load_state, fingerprint, mark
+from build_plan import msys_path
 
 ACTIONS = ('fetch_sdk', 'fetch_sdl', 'build_sdk', 'build_sdl', 'prepare', 'update_all',
-           'build_compiler', 'build_shaders')
+           'build_compiler', 'build_shaders', 'update_inplace', 'update_sdk', 'update_sdl',
+           'update_shaders', 'repair_compiler')
 SOURCE_FIELDS = ('sdk_repo', 'sdk_ref', 'sdl_repo', 'sdl_ref', 'sdl_source', 'shader_repo', 'shader_ref', 'search_root')
 DEFAULTS = {'sdk_repo': 'https://github.com/ZenithUzu/xsdk.git', 'sdk_ref': 'main',
             'sdl_repo': 'https://github.com/xenosworks/SDL-xenon.git', 'sdl_ref': 'xenon',
@@ -73,7 +77,7 @@ def execute(command, cwd=None, capture=False):
     return ''
 
 
-def checkout(git, path, url, branch, update=False):
+def checkout(git, path, url, branch, update=False, overwrite=False, work=None, component="sdk"):
     url, branch = github_source(url, branch)
     path = Path(path).resolve()
     if not path.exists():
@@ -82,17 +86,31 @@ def checkout(git, path, url, branch, update=False):
     elif not path.is_dir():
         raise ValueError('The source destination is not a folder: ' + str(path))
     elif update:
+        if not (path / '.git').exists() and overwrite:
+            update_zip_source(git, path, url, branch, work, component, execute)
+            return path
         if not (path / '.git').exists():
             raise ValueError('Updating requires a Git checkout. Choose a NEW source folder for this ZIP installation.')
         origin = execute([git, '-C', path, 'remote', 'get-url', 'origin'], capture=True)
         if github_source(origin, branch)[0] != url:
             raise ValueError('The existing source origin differs from the selected URL; choose a NEW folder.')
-        if execute([git, '-C', path, 'status', '--porcelain', '--untracked-files=normal'], capture=True):
+        status = execute([git, '-C', path, 'status', '--porcelain', '--untracked-files=normal'], capture=True)
+        if status and not overwrite:
             raise ValueError('Local changes found; save them before updating: ' + str(path))
         if execute([git, '-C', path, 'branch', '--show-current'], capture=True) != branch:
             raise ValueError('Select the matching branch or a NEW source folder.')
         execute([git, '-C', path, 'fetch', 'origin', branch])
-        execute([git, '-C', path, 'merge', '--ff-only', 'refs/remotes/origin/' + branch])
+        stash = None
+        if overwrite and any(not line.startswith('??') for line in status.splitlines()):
+            execute([git, '-C', path, 'stash', 'push', '-m', 'xSDK in-place update backup'])
+            stash = execute([git, '-C', path, 'rev-parse', 'refs/stash'], capture=True)
+            print('Tracked local edits backed up in Git stash: ' + stash, flush=True)
+        try:
+            execute([git, '-C', path, 'merge', '--ff-only', 'refs/remotes/origin/' + branch])
+        except subprocess.SubprocessError:
+            if stash:
+                execute([git, '-C', path, 'stash', 'apply', '--index', stash])
+            raise
     if not update and (path / '.git').exists():
         origin = execute([git, '-C', path, 'remote', 'get-url', 'origin'], capture=True)
         if github_source(origin, branch)[0] != url:
@@ -120,23 +138,25 @@ def setup(action, values):
                     'mingw-w64-ucrt-x86_64-mpc mingw-w64-ucrt-x86_64-python '
                     'mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja')
         execute([bash, '--login', '-c', packages])
-    update = action == 'update_all'
+    update = action in ('update_all', 'update_inplace', 'update_sdk', 'update_sdl', 'update_shaders')
+    inplace = action in ('update_inplace', 'update_sdk', 'update_sdl', 'update_shaders')
+    sdk_update = action in ('update_all', 'update_inplace', 'update_sdk')
     stamp = time.strftime('%Y%m%d-%H%M%S')
-    if update and sdk.exists() and not (sdk / '.git').exists():
+    if sdk_update and not inplace and sdk.exists() and not (sdk / '.git').exists():
         sdk = work / 'sdk-updates' / ('xsdk-' + stamp)
         print('ZIP installation kept; cloning an updated SDK to a NEW folder.', flush=True)
-    if update and source.exists() and not (source / '.git').exists():
+    if update and not inplace and source.exists() and not (source / '.git').exists():
         source = work / 'sdl-updates' / ('SDL-xenon-' + stamp)
         build = work / 'sdl-builds' / stamp
-    checkout(git, sdk, values['sdk_repo'], values['sdk_ref'], update)
+    checkout(git, sdk, values['sdk_repo'], values['sdk_ref'], sdk_update, inplace, work, 'sdk')
     if not (sdk / 'tools/windows/run.sh').is_file() or not (sdk / 'cmake/xsdk.cmake').is_file():
         raise ValueError('Choose an xSDK Windows-compatible fork. '
                          'The original SDK alone lacks this Windows integration.')
     print('XSDK_NEW_ROOT=' + str(sdk), flush=True)
     if action == 'fetch_sdk':
         return
-    if action in ('fetch_sdl', 'build_sdl', 'prepare', 'update_all'):
-        checkout(git, source, values['sdl_repo'], values['sdl_ref'], update)
+    if action in ('fetch_sdl', 'build_sdl', 'prepare', 'update_all', 'update_inplace', 'update_sdl'):
+        checkout(git, source, values['sdl_repo'], values['sdl_ref'], update, inplace, work, 'sdl')
         if not (source / 'include/SDL3/SDL.h').is_file():
             raise ValueError('The selected repository is not an SDL3 source tree.')
         if action == 'fetch_sdl':
@@ -148,6 +168,51 @@ def setup(action, values):
             return '/' + path[0].lower() + path[2:] if len(path) > 2 and path[1] == ':' else path
         execute([bash, '--login', unix(sdk / 'tools/windows/run.sh'), name, unix(sdk), unix(prefix),
                  unix(work), values['jobs']])
+    if action == 'repair_compiler':
+        if not (prefix / 'bin/powerpc-xsdk-elf-gcc.exe').is_file() or work.is_relative_to(prefix):
+            raise ValueError('Select an installed compiler and a separate work folder.')
+        state = load_state(work).get('toolchain', {})
+        cached = Path(state.get('source_work') or work / 'toolchain')
+        stages = [('binutils', 'install'), ('newlib', 'install-target-newlib'), ('gcc', 'install')]
+        recipe = fingerprint(sdk, 'toolchain')
+        compatible = state.get('recipe') == recipe and state.get('prefix') == str(prefix)
+        def prefix_matches(makefile):
+            if not makefile.is_file():
+                return False
+            text = makefile.read_text(encoding='utf-8', errors='replace')
+            match = re.search(r'^prefix\s*=\s*(.+)$', text, re.MULTILINE)
+            if not match:
+                return False
+            value = match[1].strip().replace('\\', '/')
+            if re.match(r'^/[A-Za-z]/', value):
+                value = value[1].upper() + ':' + value[2:]
+            return value.rstrip('/').casefold() == str(prefix).replace('\\', '/').rstrip('/').casefold()
+        compatible = compatible and all(prefix_matches(cached / 'build' / name / 'Makefile') for name, _ in stages)
+        import shutil
+        backup = work / 'compiler-backups' / ('compiler-' + stamp + '-' + str(time.time_ns())[-6:])
+        print('Compiler backup: ' + str(backup), flush=True)
+        shutil.copytree(prefix, backup)
+        if compatible:
+            print('Reusing registered compiler build cache; reinstalling into the selected destination.', flush=True)
+            for name, target in stages:
+                execute([msys / 'usr/bin/make.exe', '-C', cached / 'build' / name, '-j' + values['jobs'], target])
+        else:
+            print('No compatible cache: a compiler rebuild is required, but the destination is retained.', flush=True)
+            cached = work / 'compiler-build-cache' / recipe[:16]
+            previous = {name: os.environ.get(name) for name in ('PREFIX', 'WORK', 'JOBS')}
+            os.environ.update(PREFIX=msys_path(str(prefix)), WORK=msys_path(str(cached)), JOBS=values['jobs'])
+            try:
+                stage('dependencies')
+                execute([bash, '--login', msys_path(str(sdk / 'tools/toolchain/build.sh'))])
+            finally:
+                for name, value in previous.items():
+                    if value is None:
+                        os.environ.pop(name, None)
+                    else:
+                        os.environ[name] = value
+        execute([msys / 'ucrt64/bin/python.exe', sdk / 'tools/windows/check_tools.py', prefix])
+        mark(sdk, prefix, work, 'toolchain', str(cached))
+        return
     if not (prefix / 'bin/powerpc-xsdk-elf-g++.exe').is_file() or action == 'build_compiler':
         if prefix.exists() and action != 'build_compiler':
             raise ValueError('Compiler folder exists but is incomplete; select a NEW compiler destination.')
@@ -157,20 +222,20 @@ def setup(action, values):
     if action == 'build_compiler':
         return
     shader = Path(values.get('glslang') or prefix / 'bin/glslang.exe')
-    if not shader.is_file() or update or action == 'build_shaders':
-        checkout(git, work / 'glslang', values['shader_repo'], values['shader_ref'], update)
+    if not shader.is_file() or action in ('update_all', 'update_inplace', 'update_shaders', 'build_shaders'):
+        checkout(git, work / 'glslang', values['shader_repo'], values['shader_ref'], update, inplace, work, 'shaders')
         stage('shaders')
         shader = prefix / 'bin/glslang.exe'
         print('XSDK_PATHS=' + json.dumps({'glslang': str(shader)}), flush=True)
-    if action == 'build_shaders':
+    if action in ('build_shaders', 'update_shaders'):
         return
     if (not (sdk / 'build/libxsdk.a').is_file() or not (sdk / 'build/host/libxsc.dll').is_file()
-            or action in ('build_sdk', 'update_all')):
+            or action in ('build_sdk', 'update_all', 'update_inplace', 'update_sdk')):
         stage('sdk')
     if action == 'prepare' and (build / 'SDL3Config.cmake').is_file() and (build / 'libSDL3.a').is_file():
         print('Existing SDL3 build kept; no rebuild requested.', flush=True)
         return
-    if action in ('build_sdl', 'prepare', 'update_all'):
+    if action in ('build_sdl', 'prepare', 'update_all', 'update_inplace', 'update_sdl'):
         cmake, ninja = msys / 'ucrt64/bin/cmake.exe', msys / 'ucrt64/bin/ninja.exe'
         execute([cmake, '-S', source, '-B', build, '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release',
                  '-DCMAKE_MAKE_PROGRAM=' + str(ninja), '-DCMAKE_TOOLCHAIN_FILE=' + str(sdk / 'cmake/xsdk.cmake'),

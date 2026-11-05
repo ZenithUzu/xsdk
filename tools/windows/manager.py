@@ -6,19 +6,38 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from processes import hidden_options
 from discovery import detect
+from process_tree import ProcessTree
 
 
-def command(args, env=None):
+def command(args, env=None, cancelled=None):
+    tree = ProcessTree()
+    process = None
     try:
-        result = subprocess.run([str(arg) for arg in args], env=env, capture_output=True, text=True,
-                                errors="replace", timeout=15, **hidden_options())
-        return result.stdout.strip() if result.returncode == 0 else ""
+        process = subprocess.Popen([str(arg) for arg in args], env=env, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, text=True, errors="replace", **hidden_options())
+        tree.assign(process)
+        deadline = time.monotonic() + 15
+        while True:
+            if (cancelled and cancelled()) or time.monotonic() >= deadline:
+                tree.stop(process)
+                process.communicate(timeout=3)
+                return ""
+            try:
+                output, _ = process.communicate(timeout=0.1)
+                return output.strip() if process.returncode == 0 else ""
+            except subprocess.TimeoutExpired:
+                continue
     except (OSError, subprocess.SubprocessError):
+        if process:
+            tree.stop(process)
         return ""
+    finally:
+        tree.close()
 
 
 def discover(values):
@@ -64,7 +83,11 @@ def mark(sdk, prefix, work, component, source_work=""):
     temporary.replace(work / "components.json")
 
 
-def inspect(values, online=False):
+def inspect(values, online=False, cancelled=None):
+    def query(args, env=None):
+        if cancelled and cancelled():
+            raise InterruptedError("Detection cancelled.")
+        return command(args, env, cancelled) if cancelled is not None else command(args, env)
     values = discover(values)
     sdk, prefix, work, msys = (Path(values[key]) for key in ("sdk", "prefix", "work", "msys"))
     shader = Path(values.get("glslang") or prefix / "bin/glslang.exe")
@@ -78,8 +101,8 @@ def inspect(values, online=False):
         rows.append({"key": key, "name": name, "path": str(path), "version": version or "—", "status": detail})
 
     gcc = prefix / "bin/powerpc-xsdk-elf-gcc.exe"
-    version = command([gcc, "-dumpfullversion"], env) if gcc.is_file() else ""
-    machine = command([gcc, "-dumpmachine"], env) if version else ""
+    version = query([gcc, "-dumpfullversion"], env) if gcc.is_file() else ""
+    machine = query([gcc, "-dumpmachine"], env) if version else ""
     recipe = (sdk / "tools/toolchain/build.sh").read_text(encoding="utf-8") if (sdk / "tools/toolchain/build.sh").is_file() else ""
     expected = re.search(r"^GCC=gcc-(.+)$", recipe, re.M)
     compiler_state = "Falta o no se puede ejecutar"
@@ -94,11 +117,11 @@ def inspect(values, online=False):
                               else "Receta cambió: revisar actualización (reconstrucción larga)")
     row("toolchain", "Compilador C/C++", prefix, version, compiler_state)
     cxx = prefix / "bin/powerpc-xsdk-elf-g++.exe"
-    cxx_version = command([cxx, "-dumpfullversion"], env) if cxx.is_file() else ""
+    cxx_version = query([cxx, "-dumpfullversion"], env) if cxx.is_file() else ""
     row("cxx", "C++", cxx, cxx_version,
         "Disponible" if cxx_version else "Falta g++ o no se puede ejecutar; comprobar compilador")
     linker = prefix / "bin/powerpc-xsdk-elf-ld.exe"
-    linker_version = command([linker, "--version"], env) if linker.is_file() else ""
+    linker_version = query([linker, "--version"], env) if linker.is_file() else ""
     expected_binutils = re.search(r"^BINUTILS=binutils-(.+)$", recipe, re.M)
     binutils_status = "Disponible" if linker_version else "Falta o no se puede ejecutar"
     if linker_version and expected_binutils and not re.search(r"\b" + re.escape(expected_binutils[1]) + r"\b", linker_version):
@@ -112,7 +135,7 @@ def inspect(values, online=False):
     if match and expected_newlib and not match[1].startswith(expected_newlib[1]):
         newlib_status = "Versión distinta; receta pide " + expected_newlib[1]
     row("newlib", "newlib", header, match[1] if match else "", newlib_status)
-    shader_version = command([shader, "--version"], env) if shader.is_file() else ""
+    shader_version = query([shader, "--version"], env) if shader.is_file() else ""
     row("shaders", "Shaders / glslang", shader, shader_version.splitlines()[0] if shader_version else "",
         "Disponible; versión no demuestra que sea glslang-xenon" if shader_version else "Falta o no se puede ejecutar")
     library = sdk / "build/libxsdk.a"
@@ -122,7 +145,7 @@ def inspect(values, online=False):
         sdk_status = "Construcción registrada con este código"
     else:
         sdk_status = "Bibliotecas presentes; comprobar o reconstruir solo el SDK"
-    row("sdk", "xSDK", sdk, command(["git", "-C", sdk, "rev-parse", "--short", "HEAD"], env), sdk_status)
+    row("sdk", "xSDK", sdk, query(["git", "-C", sdk, "rev-parse", "--short", "HEAD"], env), sdk_status)
     sdl = Path(values.get("sdl") or "__missing_sdl__")
     row("sdl", "SDL3 Xenon", sdl, "", "SDL3Config.cmake presente" if (sdl / "SDL3Config.cmake").is_file()
         else "Falta SDL3; usar Fuentes y dependencias")
@@ -134,11 +157,11 @@ def inspect(values, online=False):
         git = shutil.which("git.exe", path=env["PATH"]) or "git"
         for key, repository, branch, local in (
             ("sdk", "https://github.com/ZenithUzu/xsdk.git", "main",
-             command([git, "-C", sdk, "rev-parse", "HEAD"], env)),
+             query([git, "-C", sdk, "rev-parse", "HEAD"], env)),
             ("shaders", "https://github.com/xenosworks/glslang-xenon.git", "xenon",
              state.get("shaders", {}).get("source", "")),
         ):
-            remote = command([git, "ls-remote", repository, "refs/heads/" + branch], env)
+            remote = query([git, "ls-remote", repository, "refs/heads/" + branch], env)
             for item in rows:
                 if item["key"] == key:
                     item["status"] += (" · No se pudo consultar el remoto" if not remote else

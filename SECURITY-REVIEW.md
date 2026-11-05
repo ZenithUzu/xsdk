@@ -48,3 +48,12 @@ The dependency panel adds bounded filesystem discovery and explicit GitHub clone
 A static MSYS2 bootstrap installs UCRT64 Python only if missing and only after a dependency action. The setup driver can install missing MSYS2 build packages through a fixed pacman command. No installer runs at application startup. Updates use origin/branch checks, dirty-tree rejection and fast-forward merges; ZIP sources are cloned into new locations. Existing compiler destinations are preserved. All Python subprocess launches retain the no-console policy and captured logs.
 
 45 host tests passed after this extension. Real-laptop checks detected and reused existing components and configured/built SDL3 via CMake/Ninja, which reported no pending compilation. A fresh multi-hour compiler bootstrap was not repeated; it invokes the existing xSDK recipe. Frozen and antivirus results are specific to each portable artifact, not inherited from an earlier version.
+
+
+## Cancellation and source replacement extension
+
+Windows operations use an unnamed Job Object owned by the GUI, with kill-on-close and explicit termination for cancellation. Only the process launched by the operation is assigned. Local discovery uses cancellable child processes with a 15-second query limit. Existing taskkill fallback remains limited to the active child PID/tree; no unrelated programs are targeted.
+
+Explicit in-place source replacement uses a separate Git snapshot/cache, validates component markers and relative destination paths, refuses escaping linked paths and backs up changed files before replacement. Unchanged bytes retain their timestamps. Only files previously recorded as managed source may be pruned, with a backup; untracked user files and known build/data directories are kept. Explicit Git updates stash tracked edits instead of deleting them. Interrupted source updates can leave a partial stage that must be retried before building.
+
+Compiler repair backs up the selected compiler and checks recorded recipe/prefix plus cached Makefile prefixes before cached installation. Without matching cache it uses a separate build cache and the same install destination; a full build may be necessary. These installation actions remain user-triggered. No real dependency/game build or installation was performed during the regression checks for this extension.

@@ -18,6 +18,7 @@ from options import BUILD_TYPES, MAKE_TARGETS
 from manager import inspect
 from game_package import package_game
 from settings import recover, legacy_profiles
+from process_tree import ProcessTree
 from dependencies import DEFAULTS as SOURCE_DEFAULTS, SOURCE_FIELDS, dependency_plan, github_source
 
 FROZEN = getattr(sys, "frozen", False)
@@ -40,6 +41,7 @@ class App:
         self.window = window
         self.events = queue.Queue()
         self.process = None
+        self.process_tree = None
         self.busy = False
         self.cancelled = threading.Event()
         self.folder = (Path(sys.executable).resolve().parent / "data" if FROZEN
@@ -195,7 +197,8 @@ class App:
                               ("Construir xSDK", lambda: self.start("deps_build_sdk")),
                               ("Construir SDL3", lambda: self.start("deps_build_sdl")),
                               ("Preparar todo lo faltante", lambda: self.start("deps_prepare")),
-                              ("Actualizar fuentes y reconstruir", lambda: self.start("deps_update_all")),
+                              ("Actualizar en la misma ruta con respaldo", lambda: self.start("deps_update_inplace")),
+                              ("Actualizar/reinstalar compilador actual", lambda: self.start("deps_repair_compiler")),
                               ("Construir compilador en destino nuevo", self.new_compiler),
                               ("Construir glslang", lambda: self.start("deps_build_shaders")))
         for index, (label, callback) in enumerate(dependency_buttons):
@@ -203,9 +206,9 @@ class App:
             button.grid(row=len(source_labels) + 1 + index // 3, column=index % 3, sticky="ew", padx=3, pady=3)
             self.actions.append(button)
         ttk.Button(source_grid, text="Web de MSYS2", command=lambda: webbrowser.open("https://www.msys2.org/")).grid(
-            row=len(source_labels) + 5, column=0, sticky="w")
+            row=len(source_labels) + 6, column=0, sticky="w")
         ttk.Button(source_grid, text="Ver receta del compilador", command=self.open_compiler_recipe).grid(
-            row=len(source_labels) + 5, column=1, sticky="w")
+            row=len(source_labels) + 6, column=1, sticky="w")
         self.output = tk.Text(panel, wrap="word", font=("Consolas", 10), state="disabled")
         bottom = ttk.Frame(panel)
         bottom.pack(side="bottom", fill="x", pady=(8, 0))
@@ -299,6 +302,7 @@ class App:
             return
         values = {key: value.get() for key, value in self.fields.items()}
         self.busy = True
+        self.cancelled.clear()
         self.active_action = "Consultar actualizaciones" if online else "Detectar herramientas"
         self.started_at = time.monotonic()
         self.last_progress_notice = self.started_at
@@ -311,7 +315,10 @@ class App:
     def scan_worker(self, values, online):
         code = 0
         try:
-            self.events.put(inspect(values, online))
+            self.events.put(inspect(values, online, self.cancelled.is_set))
+        except InterruptedError:
+            code = 130
+            self.events.put("Detection cancelled.\n")
         except Exception as error:
             code = 1
             self.events.put("No se pudo inspeccionar: " + str(error) + "\n")
@@ -327,24 +334,13 @@ class App:
             return
         key = selected[0]
         if key in ("toolchain", "newlib", "cxx", "binutils"):
-            if not self.ask("Actualizar compilador", "Esto reconstruye GCC y newlib y puede tardar bastante. "
-                                      "Para usar tus herramientas actuales basta con indicar su ruta. "
-                                      "¿Quieres construir un compilador nuevo sin reemplazar el existente?"):
-                return
-            destination = filedialog.asksaveasfilename(title=self.tr("Carpeta NUEVA del compilador"),
-                                                     initialfile="compiler-nuevo")
-            if not destination:
-                return
-            if Path(destination).exists():
-                self.error("Compilador", "Elige una ruta que todavía no exista")
-                return
-            self.fields["prefix"].set(destination)
-            self.start("toolchain_fresh")
+            self.start("deps_repair_compiler")
         elif key == "shaders":
-            source = Path(self.fields["work"].get()) / "glslang/.git"
-            self.start("shaders_update" if source.exists() else "shaders")
+            self.start("deps_update_shaders")
         elif key == "sdk":
-            self.start("update")
+            self.start("deps_update_sdk")
+        elif key == "sdl":
+            self.start("deps_update_sdl")
         elif key == "dependencies":
             self.start("dependencies")
 
@@ -442,12 +438,15 @@ class App:
     def run(self, args, env, action, values):
         log_path = self.folder / (time.strftime("%Y%m%d-%H%M%S-") + action + ".log")
         code = -1
+        tree = ProcessTree()
+        self.process_tree = tree
         try:
             with log_path.open("w", encoding="utf-8") as log:
                 self.process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                                 env=env, encoding="utf-8", errors="replace", **hidden_options())
+                tree.assign(self.process)
                 if self.cancelled.is_set():
-                    self.cancel()
+                    tree.stop(self.process)
                 for line in self.process.stdout:
                     log.write(line)
                     log.flush()
@@ -457,6 +456,8 @@ class App:
                     if line.startswith("XSDK_NEW_ROOT="):
                         self.events.put({"paths": {"sdk": line.strip().split("=", 1)[1]}})
                 code = self.process.wait()
+                if self.cancelled.is_set():
+                    code = 130
                 if code == 0 and action in ("game_package", "package_existing"):
                     destination, count = package_game(
                         values["project"], Path(values["work"]) / "projects" / Path(values["project"]).name,
@@ -469,11 +470,13 @@ class App:
             code = 1
             self.events.put(str(error) + "\n")
             if self.process and self.process.poll() is None:
-                self.cancel()
-                self.process.wait()
+                tree.stop(self.process)
+                self.process.wait(timeout=5)
         finally:
+            tree.close()
+            self.process_tree = None
             self.process = None
-            self.events.put((code, log_path))
+            self.events.put((130 if self.cancelled.is_set() else code, log_path))
 
     def poll(self):
         for _ in range(200):
@@ -498,7 +501,8 @@ class App:
                 self.save_preferences()
             elif isinstance(item, tuple):
                 code, log = item
-                message = "Etapa terminada" if code == 0 else f"Error/cancelación ({code})"
+                message = ("Operación cancelada." if code == 130 else
+                           "Etapa terminada" if code == 0 else f"Error/cancelación ({code})")
                 self.status.set(self.tr(message) + f" · Log: {log}")
                 elapsed = int(time.monotonic() - self.started_at)
                 self.write_output(self.tr(message) + f" · {elapsed // 60:02d}:{elapsed % 60:02d} · Log: {log}\n")
@@ -526,11 +530,9 @@ class App:
         self.cancelled.set()
         if self.busy:
             self.write_output(self.tr("Cancelación solicitada.") + "\n")
-        process = self.process
-        if process and process.poll() is None:
-            subprocess.run([str(Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32/taskkill.exe"),
-                            "/PID", str(process.pid), "/T", "/F"], check=False,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **hidden_options())
+        process, tree = self.process, self.process_tree
+        if process and tree:
+            threading.Thread(target=tree.stop, args=(process,), daemon=True).start()
 
     def results(self):
         project = Path(self.fields["project"].get())
@@ -565,9 +567,9 @@ def main():
         root.withdraw()
         commands = []
         original = manager.command
-        def recorded(args, env=None):
+        def recorded(args, env=None, cancelled=None):
             commands.append([str(arg) for arg in args])
-            return original(args, env)
+            return original(args, env, cancelled)
         manager.command = recorded
         app = App(root)
         app.fields["auto_update"].set("0")

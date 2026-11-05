@@ -4,6 +4,9 @@ LANGUAGES = {"en": "English", "es": "Español", "pt": "Português"}
 
 # Existing Spanish messages stay the keys so saved settings and backend errors remain compatible.
 MESSAGES = [
+    ("Operación cancelada.", "Operation cancelled.", "Operação cancelada."),
+    ("Actualizar en la misma ruta con respaldo", "Update in place with backup", "Atualizar na mesma pasta com backup"),
+    ("Actualizar/reinstalar compilador actual", "Update/reinstall current compiler", "Atualizar/reinstalar compilador atual"),
     ("Listo. La información y el progreso aparecerán aquí.",
      "Ready. Information and progress will appear here.",
      "Pronto. Informações e progresso aparecerão aqui."),

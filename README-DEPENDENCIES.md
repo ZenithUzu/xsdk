@@ -70,3 +70,19 @@ Las rutas recuperadas deben existir y tener los archivos esperados. Se conservan
 El recuadro de información muestra de qué archivo se recuperaron las rutas, los resultados de la detección, el inicio y fin de operaciones y los comandos. Un aviso de actividad cada 15 segundos no es una estimación de porcentaje. Las salidas del compilador se conservan tal como llegan.
 
 Estos cambios se aplicaron a las fuentes y al lanzador CMD local. No se recompiló ni reemplazó el EXE del Release v3.
+
+
+## Actualizar o reinstalar en la ruta existente
+
+En la versión nueva, **Instalar / actualizar seleccionado** usa la ruta actual para SDK, SDL3, glslang y compilador. **Actualizar en la misma ruta con respaldo** actualiza las fuentes de dependencias y reconstruye sobre sus directorios existentes.
+
+- En instalaciones SDK/SDL procedentes de ZIP, se obtiene una copia Git en `trabajo/source-cache/` y se copian al destino solo los archivos de fuente que cambiaron. Los originales sustituidos quedan en `trabajo/source-backups/`. Se preservan `build/`, `build-xsdk/`, `build-windows/`, datos locales y archivos no administrados. Se conserva la fecha de los archivos idénticos para no forzar recompilaciones.
+- En un checkout Git, se mantiene la comprobación de origen/rama y el avance rápido. En este modo explícito, las modificaciones de archivos rastreados se guardan en un **Git stash**, cuyo identificador aparece en el recuadro. No se descartan commits ni se ejecuta `reset --hard`/`clean`. Una colisión con un archivo no rastreado puede requerir intervención; no se borra automáticamente.
+- **Actualizar/reinstalar compilador actual** respalda primero el compilador en `trabajo/compiler-backups/`. Si existen los Makefiles originales, coinciden la receta registrada y el destino configurado, reutiliza sus objetivos de instalación. Si no hay caché compatible, necesita construir el compilador en una caché nueva y conservar el mismo destino; esto sí puede tardar. No es posible evitar una reconstrucción real cuando cambian versión, parches u opciones incompatibles.
+- Los programas hijos de la operación de Windows se agrupan en un Job Object. **Cancelar** termina ese grupo, aunque Bash ya haya salido, y no bloquea la interfaz. También se puede cancelar la detección de versiones. El estado final indica cancelación en lugar de éxito.
+
+Si cancelas durante una descarga o sustitución de fuentes, puede quedar una etapa incompleta: vuelve a ejecutar la actualización antes de construir. Los respaldos se conservan y no se borran las cachés completas automáticamente. No se actualizaron ni construyeron dependencias reales para verificar este cambio: las pruebas usan procesos de espera y árboles de archivos sintéticos.
+
+**English:** selected-component updates can keep their current destination. ZIP source overlays back up changed files and preserve build caches/unchanged timestamps. Explicit Git overwrite saves tracked edits in stash and retains fast-forward checks. Compiler repair reuses matching build caches or rebuilds when necessary, after a backup. Windows cancellation terminates the owned process group, including children left by an exited launcher.
+
+**Português:** a atualização mantém o destino selecionado. Fontes ZIP são substituídas com backup dos arquivos alterados, preservando caches e datas dos arquivos iguais. Alterações Git rastreadas vão para stash no modo explícito. O compilador reutiliza cache compatível ou precisa de uma reconstrução, com backup. Cancelar termina o grupo de processos da operação no Windows.

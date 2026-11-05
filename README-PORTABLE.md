@@ -71,3 +71,8 @@ See [the source-review scope](SECURITY-REVIEW.md). Local antivirus results apply
 ## Fuentes, enlaces y preparación
 
 La nueva pestaña **Fuentes y dependencias / Sources and dependencies / Fontes e dependências** permite detectar rutas, configurar URLs GitHub y construir o actualizar dependencias desde la interfaz. Consulta [la guía EN/ES/PT](README-DEPENDENCIES.md). MSYS2 es el requisito inicial; sus comandos trabajan por detrás con salida visible.
+
+
+## Cancelación y actualización en la misma ruta
+
+La actualización actual incorpora control del árbol de procesos para **Cancelar**, además de **Actualizar en la misma ruta con respaldo** y **Actualizar/reinstalar compilador actual**. Consulta las condiciones y los respaldos en [la guía de dependencias](README-DEPENDENCIES.md#actualizar-o-reinstalar-en-la-ruta-existente). Una caché compatible puede ahorrar reconstrucciones; no evita trabajo necesario tras cambios de versión o parches.

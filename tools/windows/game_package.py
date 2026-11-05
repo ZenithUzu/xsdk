@@ -42,6 +42,8 @@ def package_game(project, build, output, pc='', include_mods=False, cancelled=la
             raise ValueError('The output must be separate from runtime inputs.')
         origins[folder] = str(source)
         for path in source.rglob('*'):
+            if cancelled():
+                raise InterruptedError('Packaging cancelled.')
             if path.is_symlink() or (hasattr(path, 'is_junction') and path.is_junction()):
                 raise ValueError('Linked runtime paths are not supported: ' + str(path))
             relative = Path(folder) / path.relative_to(source)
