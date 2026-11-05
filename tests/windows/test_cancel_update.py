@@ -86,6 +86,7 @@ class SourceUpdateTests(unittest.TestCase):
             (target / 'src/unchanged.c').write_text('same')
             before = (target / 'src/unchanged.c').stat().st_mtime_ns
             (snapshot / 'src/update.c').write_text('new')
+            os.utime(snapshot / 'src/update.c', (100, 100))
             (target / 'src/update.c').write_text('local edit')
             (target / 'build').mkdir()
             (target / 'build/cached.o').write_bytes(b'cached object')
@@ -96,6 +97,7 @@ class SourceUpdateTests(unittest.TestCase):
             self.assertEqual((target / 'build/cached.o').read_bytes(), b'cached object')
             self.assertEqual((backup / 'src/update.c').read_text(), 'local edit')
             self.assertEqual((target / 'src/update.c').read_text(), 'new')
+            self.assertGreater((target / 'src/update.c').stat().st_mtime, 100)
             self.assertEqual((target / 'personal.txt').read_text(), 'keep')
             self.assertEqual(json.loads((target / '.xsdk-managed-source.json').read_text())['revision'], 'revision')
 

@@ -67,6 +67,8 @@ def overlay(snapshot, target, names, backup, revision):
         os.close(descriptor)
         try:
             shutil.copy2(source, temporary)
+            # Changed bytes must be newer than objects compiled from local edits.
+            os.utime(temporary, None)
             os.replace(temporary, destination)
         finally:
             if Path(temporary).exists():
