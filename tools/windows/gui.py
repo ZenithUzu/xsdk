@@ -17,6 +17,7 @@ from i18n import LANGUAGES, translate
 from options import BUILD_TYPES, MAKE_TARGETS
 from manager import inspect
 from game_package import package_game
+from settings import recover, legacy_profiles
 from dependencies import DEFAULTS as SOURCE_DEFAULTS, SOURCE_FIELDS, dependency_plan, github_source
 
 FROZEN = getattr(sys, "frozen", False)
@@ -25,7 +26,7 @@ ROOT = (Path(sys.executable).resolve().parent / "sdk" if FROZEN
 DEFAULT_SDK = Path("C:/xsdk-windows") if FROZEN and Path("C:/xsdk-windows").is_dir() else ROOT
 CREDITS = """xSDK original: Mena / xenosworks — MIT
 https://github.com/xenosworks/xsdk
-Port experimental para Windows e interfaz: Axel, con asistencia de OpenAI Codex.
+Port experimental para Windows e interfaz: ZenithUzu, con asistencia de OpenAI Codex.
 Se conservan LICENSE y THIRD_PARTY_NOTICES.md.
 Xenia y libxenon: componentes BSD según los avisos originales.
 GCC, binutils, newlib, glslang-xenon y MSYS2 conservan sus propias licencias.
@@ -51,11 +52,7 @@ class App:
                     "auto_update": "0", "glslang": "", "rom": "", "language": "en", "restore_inputs": "0",
                     "pc_game": "", "package_output": "", "include_mods": "0"}
         defaults.update(SOURCE_DEFAULTS)
-        try:
-            saved = json.loads(self.settings_path.read_text(encoding="utf-8"))
-            defaults.update({key: str(value) for key, value in saved.items() if key in defaults})
-        except (OSError, ValueError, AttributeError):
-            pass
+        defaults, self.recovered_profiles = recover(defaults, self.settings_path)
         self.fields = {name: tk.StringVar(value=value) for name, value in defaults.items()}
         self.status = tk.StringVar(value="Port experimental — aún requiere validación completa en Windows")
         window.title("xSDK para Windows — experimental")
@@ -192,6 +189,7 @@ class App:
                                      "Las descargas y compilaciones solo empiezan al pulsar un botón."),
                   wraplength=850).grid(row=len(source_labels), column=0, columnspan=3, sticky="w", pady=8)
         dependency_buttons = (("Detectar rutas instaladas", lambda: self.scan(False)),
+                              ("Recuperar rutas anteriores", self.recover_previous),
                               ("Descargar xSDK", lambda: self.start("deps_fetch_sdk")),
                               ("Descargar SDL3", lambda: self.start("deps_fetch_sdl")),
                               ("Construir xSDK", lambda: self.start("deps_build_sdk")),
@@ -205,9 +203,9 @@ class App:
             button.grid(row=len(source_labels) + 1 + index // 3, column=index % 3, sticky="ew", padx=3, pady=3)
             self.actions.append(button)
         ttk.Button(source_grid, text="Web de MSYS2", command=lambda: webbrowser.open("https://www.msys2.org/")).grid(
-            row=len(source_labels) + 4, column=0, sticky="w")
+            row=len(source_labels) + 5, column=0, sticky="w")
         ttk.Button(source_grid, text="Ver receta del compilador", command=self.open_compiler_recipe).grid(
-            row=len(source_labels) + 4, column=1, sticky="w")
+            row=len(source_labels) + 5, column=1, sticky="w")
         self.output = tk.Text(panel, wrap="word", font=("Consolas", 10), state="disabled")
         bottom = ttk.Frame(panel)
         bottom.pack(side="bottom", fill="x", pady=(8, 0))
@@ -218,11 +216,42 @@ class App:
         ttk.Label(panel, textvariable=self.status).pack(side="bottom", anchor="w", pady=(6, 0))
         self.output.pack(fill="both", expand=True)
         self.apply_language()
+        self.write_output(self.tr("Listo. La información y el progreso aparecerán aquí.") + "\n")
+        if self.settings_path.is_file():
+            self.write_output(self.tr("Configuración cargada: ") + str(self.settings_path) + "\n")
+        for profile, keys in self.recovered_profiles:
+            self.write_output(self.tr("Rutas recuperadas de: ") + profile + " · " + ", ".join(keys) + "\n")
         window.protocol("WM_DELETE_WINDOW", self.close)
         window.after(100, self.poll)
         window.after(200, lambda: self.scan(False))
         if self.fields["auto_update"].get() == "1" and "--startup-test" not in sys.argv:
             window.after(1500, self.auto_update)
+
+    def write_output(self, text):
+        self.output.configure(state="normal")
+        self.output.insert("end", text)
+        self.output.delete("1.0", "end-5000l")
+        self.output.see("end")
+        self.output.configure(state="disabled")
+
+    def recover_previous(self):
+        if self.busy:
+            return
+        values = {key: value.get() for key, value in self.fields.items()}
+        # Recover invalid/empty paths only when explicitly requested; preserve valid choices.
+        profiles = legacy_profiles(self.settings_path)
+        values, origins = recover(values, self.settings_path, candidates=profiles, replace_invalid=True,
+                                  saved_override=values)
+        for key, value in values.items():
+            self.fields[key].set(value)
+        self.language_choice.set(LANGUAGES.get(self.fields["language"].get(), "English"))
+        self.apply_language()
+        if not origins:
+            self.write_output(self.tr("No se encontraron rutas anteriores adicionales.") + "\n")
+        for profile, keys in origins:
+            self.write_output(self.tr("Rutas recuperadas de: ") + profile + " · " + ", ".join(keys) + "\n")
+        self.save_preferences()
+        self.scan(False)
 
     def tr(self, text):
         return translate(str(text), self.fields["language"].get())
@@ -272,6 +301,9 @@ class App:
         self.busy = True
         self.active_action = "Consultar actualizaciones" if online else "Detectar herramientas"
         self.started_at = time.monotonic()
+        self.last_progress_notice = self.started_at
+        self.write_output("\n[" + time.strftime("%H:%M:%S") + "] " + self.tr("Iniciando: ") +
+                          self.tr(self.active_action) + "\n")
         for button in self.actions:
             button.configure(state="disabled")
         threading.Thread(target=self.scan_worker, args=(values, online), daemon=True).start()
@@ -392,12 +424,16 @@ class App:
             self.folder.mkdir(parents=True, exist_ok=True)
             self.settings_path.write_text(json.dumps(values, indent=2), encoding="utf-8")
         except (OSError, ValueError) as error:
+            self.write_output(self.tr("Configuración") + ": " + self.tr(str(error)) + "\n")
             self.error("Configuración", str(error))
             return
         self.cancelled.clear()
         self.busy = True
         self.active_action = action
         self.started_at = time.monotonic()
+        self.last_progress_notice = self.started_at
+        self.write_output("\n[" + time.strftime("%H:%M:%S") + "] " + self.tr("Iniciando: ") +
+                          self.tr(self.active_action) + "\n")
         for button in self.actions:
             button.configure(state="disabled")
         self.status.set(self.tr("Ejecutando: ") + action)
@@ -450,16 +486,22 @@ class App:
                     for key in self.inventory.get_children():
                         self.inventory.delete(key)
                 for row in item.get("rows", []):
+                    self.write_output(self.tr(row["name"]) + " · " + row["version"] + " · " +
+                                      self.tr(row["status"]) + (" · " + row["path"] if row.get("path") else "") + "\n")
                     self.inventory.insert("", "end", iid=row["key"],
                                           values=tuple(self.tr(row[key]) for key in ("name", "version", "status")))
                 for key in ("prefix", "msys", "glslang", "sdk", "sdl", "sdl_source"):
                     if item.get("paths", {}).get(key):
                         self.fields[key].set(item["paths"][key])
+                        if "rows" not in item:
+                            self.write_output(self.tr("Ruta seleccionada: ") + key + " = " + item["paths"][key] + "\n")
                 self.save_preferences()
             elif isinstance(item, tuple):
                 code, log = item
                 message = "Etapa terminada" if code == 0 else f"Error/cancelación ({code})"
                 self.status.set(self.tr(message) + f" · Log: {log}")
+                elapsed = int(time.monotonic() - self.started_at)
+                self.write_output(self.tr(message) + f" · {elapsed // 60:02d}:{elapsed % 60:02d} · Log: {log}\n")
                 if code == 0 and self.active_action in ("shaders", "shaders_update"):
                     self.fields["glslang"].set(str(Path(self.fields["prefix"].get()) / "bin/glslang.exe"))
                     self.save_preferences()
@@ -469,19 +511,21 @@ class App:
                 for button in self.actions:
                     button.configure(state="normal")
             else:
-                self.output.configure(state="normal")
-                self.output.insert("end", item)
-                self.output.delete("1.0", "end-5000l")
-                self.output.see("end")
-                self.output.configure(state="disabled")
+                self.write_output(item)
         if self.busy:
             elapsed = int(time.monotonic() - self.started_at)
+            if time.monotonic() - getattr(self, "last_progress_notice", self.started_at) >= 15:
+                self.write_output(self.tr("Sigue en ejecución: ") + self.tr(self.active_action) +
+                                  f" · {elapsed // 60:02d}:{elapsed % 60:02d}\n")
+                self.last_progress_notice = time.monotonic()
             self.status.set(self.tr(f"Ejecutando: {self.active_action} · "
                                     f"{elapsed // 60:02d}:{elapsed % 60:02d} · Consulta los logs"))
         self.window.after(100, self.poll)
 
     def cancel(self):
         self.cancelled.set()
+        if self.busy:
+            self.write_output(self.tr("Cancelación solicitada.") + "\n")
         process = self.process
         if process and process.poll() is None:
             subprocess.run([str(Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32/taskkill.exe"),

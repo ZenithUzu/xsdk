@@ -59,3 +59,14 @@ Instale MSYS2 primeiro. **Preparar componentes ausentes** instala pacotes UCRT64
 **Atualizar fontes e recompilar** verifica origem e branch, rejeita alterações locais e faz atualizações fast-forward. Instalações ZIP são preservadas, com novas fontes Git em outra pasta. Compiladores existentes não são reconstruídos automaticamente; use a ação explícita com novo destino. Cancelar interrompe a árvore de processos; downloads interrompidos podem deixar fontes incompletas. O log mostra as etapas concluídas antes de qualquer erro.
 
 São aceitos apenas repositórios HTTPS do GitHub, incluindo `/tree/branch`, sem credenciais ou links de arquivos/releases. Validar a URL não comprova a segurança do código. Nenhuma instalação ou atualização acontece ao abrir a interface. Depois, configure o port/ROM e use **Compilar e empacotar jogo**.
+
+
+## Recuperar configuración del BAT/CMD y portables anteriores
+
+La interfaz fuente actual lee primero su configuración y, cuando faltan rutas, consulta la configuración compartida de `Iniciar-Windows.cmd` en `%LOCALAPPDATA%/xsdk-windows/settings.json`. También revisa ubicaciones conocidas y carpetas anteriores con nombre xSDK en `C:/`, `C:/tools`, Descargas y junto al portable. Es una búsqueda limitada de archivos JSON, sin ejecutar BAT/CMD ni programas antiguos y sin recorrer todo el disco.
+
+Las rutas recuperadas deben existir y tener los archivos esperados. Se conservan las opciones actuales no vacías; el botón **Recuperar rutas anteriores** permite además sustituir rutas inválidas por otras válidas guardadas. No se importan acciones automáticas ni opciones de restauración de inputs/mods. Si el proyecto anterior apuntaba a `platform/xsdk`, se selecciona la raíz del port cuando existe `xsdk-project.json`.
+
+El recuadro de información muestra de qué archivo se recuperaron las rutas, los resultados de la detección, el inicio y fin de operaciones y los comandos. Un aviso de actividad cada 15 segundos no es una estimación de porcentaje. Las salidas del compilador se conservan tal como llegan.
+
+Estos cambios se aplicaron a las fuentes y al lanzador CMD local. No se recompiló ni reemplazó el EXE del Release v3.
