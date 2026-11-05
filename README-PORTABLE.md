@@ -1,10 +1,12 @@
-# xSDK Windows Portable — EXE
+# xSDK Windows Portable v3 — EXE
+
+[Download ZIP / Descargar ZIP / Baixar ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3/xSDK-Windows-Portable-v3.zip) · [Release / SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3)
 
 ## Español
 
 Descomprime el ZIP completo en una carpeta con permiso de escritura y abre **xSDK-Windows.exe**. Conserva la carpeta `_internal/` junto al EXE: contiene las dependencias visibles y evita autoextraerlas a temporales al arrancar. La interfaz incluye su propio Python/Tkinter; no necesitas instalar Python para abrirla. Elige **Español** arriba. Las preferencias y logs se guardan en `data/`, junto al EXE. No se solicitan permisos de administrador.
 
-**Portable no significa que el compilador venga incluido.** El paquete incluye la interfaz, sus fuentes, las fuentes públicas de xSDK y las licencias. Para construir XEX necesitas MSYS2 UCRT64, el compilador PowerPC, las bibliotecas construidas de xSDK y SDL3 Xenon, igual que con la versión fuente. Selecciona sus rutas en la interfaz. Si faltan bibliotecas del SDK, usa **Reconstruir solo SDK**. La [guía de Windows](https://github.com/ZenithUzu/xsdk/blob/main/README-WINDOWS.md) y los README de `sdk/` explican su preparación.
+**Portable no significa que el compilador venga incluido.** El paquete incluye la interfaz, sus fuentes, las fuentes públicas de xSDK y las licencias. Para construir XEX necesitas MSYS2 UCRT64, el compilador PowerPC, las bibliotecas construidas de xSDK y SDL3 Xenon, igual que con la versión fuente. Selecciona sus rutas en la interfaz. Para preparar lo que falte, usa **Fuentes y dependencias → Preparar todo lo faltante**; también hay botones de construcción separados. La [guía de Windows](https://github.com/ZenithUzu/xsdk/blob/main/README-WINDOWS.md) y los README de `sdk/` explican su preparación.
 
 ### Preparar CoopDX para Xbox
 

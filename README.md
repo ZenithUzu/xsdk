@@ -14,7 +14,23 @@
 
 This experimental Windows fork of [xenosworks/xsdk](https://github.com/xenosworks/xsdk) uses **MSYS2 UCRT64**. The interface supports **English, Spanish and Portuguese**. Use the **`main`** branch.
 
-[Download ZIP](https://github.com/ZenithUzu/xsdk/archive/refs/heads/main.zip) · [Windows manual — Spanish](README-WINDOWS.md) · [Port recipes — EN / ES / PT](README-PROJECTS.md) · [Original README](README-UPSTREAM.md) · [Build status](https://github.com/ZenithUzu/xsdk/actions)
+[Source code ZIP](https://github.com/ZenithUzu/xsdk/archive/refs/heads/main.zip) · [Windows manual — Spanish](README-WINDOWS.md) · [Port recipes — EN / ES / PT](README-PROJECTS.md) · [Original README](README-UPSTREAM.md) · [Build status](https://github.com/ZenithUzu/xsdk/actions)
+
+## Download and quick start
+
+**[Download xSDK Windows Portable v3 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3/xSDK-Windows-Portable-v3.zip)** · [Release notes and SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3)
+
+1. Extract the **entire ZIP** into a writable folder. Keep `_internal/`, `sdk/` and the license files beside **xSDK-Windows.exe**. Open that EXE; no separate Python installation is required for the interface.
+2. Install [MSYS2](https://www.msys2.org/) if missing and update it from UCRT64 with `pacman -Syu`. MSYS2 remains the external build environment, not a bundled compiler.
+3. Choose your language and open **Sources and dependencies**. Use **Detect installed paths**, or choose an additional search folder. Review the results; valid saved selections are kept.
+4. Set the GitHub source URLs, branches and local destinations for xSDK Windows, SDL3 Xenon and glslang. Defaults are provided. Use paths without spaces for xSDK, compiler and work.
+5. Use **Prepare missing components**. It installs missing MSYS2 packages and builds missing components behind the interface, while reusing available tools. Commands and errors remain in the output panel. A fresh compiler build can take hours. Use the separate component buttons when you only need one step.
+6. For CoopDX360, choose its repository root, your private US ROM, SDL3 build and a **NEW** game output folder under **Paths and project**. Keep Release and extra CMake options `[]`; use **Build and package game**. Private inputs still need preparation as documented by the port.
+7. Copy the completed game folder to Xbox yourself with the game closed. Keep your existing saves when updating. The tool does not deploy or launch titles automatically.
+
+Settings/logs stay in `data/`. Use **Update sources and rebuild** for explicit dependency updates; local changes are protected and existing compiler destinations are not rebuilt automatically. See [the dependency guide](README-DEPENDENCIES.md) and [portable instructions](README-PORTABLE.md).
+
+**What the download contains:** the GUI/runtime, public SDK and application source, license notices, runtime hashes and validation/antivirus reports. **Not included:** MSYS2, a prebuilt PowerPC compiler, ROMs, private game assets or a ready-to-play game. The dependency panel can prepare the build tools after MSYS2 is installed.
 
 ## Features
 
@@ -36,7 +52,7 @@ Opening the interface scans your tools. It does not automatically rebuild GCC, n
 | Component | Purpose |
 | --- | --- |
 | 64-bit Windows 10/11 | Host system |
-| Python 3.11+ with tkinter | Desktop interface; use the `py` launcher or the default UCRT64 Python fallback |
+| Python 3.11+ with tkinter | Only for running the source interface; included in the portable EXE |
 | MSYS2 UCRT64 | Host tools and build environment |
 | xSDK PowerPC GCC/G++, binutils and newlib | Compile and link Xbox 360 code |
 | glslang-xenon and built xSDK libraries | Shader compilation and runtime |
@@ -48,7 +64,7 @@ The toolchain recipe uses GCC 15.3.0, binutils 2.47 and newlib 4.6.0.20260123 wi
 
 The GUI can be packaged as a Windows EXE with Python/Tkinter included. It also prepares a private CoopDX game folder from your local source build and ROM. MSYS2, the compiler, built SDK and SDL3 remain external prerequisites. See [portable usage and build instructions](README-PORTABLE.md). [Sources / Fuentes / Fontes](README-DEPENDENCIES.md).
 
-## Installation
+## Running from source (optional)
 
 ### Already have the tools?
 

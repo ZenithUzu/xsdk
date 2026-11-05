@@ -23,6 +23,22 @@ Se conservan el SDK original, su documentación, ejemplos, licencias y créditos
 
 [Recetas de proyectos y guía EN / ES / PT](README-PROJECTS.md)
 
+## Descargar y empezar
+
+**[Descargar xSDK Windows Portable v3 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3/xSDK-Windows-Portable-v3.zip)** · [Release y SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3)
+
+1. Descomprime **todo el ZIP** en una carpeta con permiso de escritura. Conserva `_internal/`, `sdk/` y las licencias junto a **xSDK-Windows.exe**. Abre ese EXE: la interfaz no necesita que instales Python.
+2. Instala [MSYS2](https://www.msys2.org/) si falta y actualízalo desde UCRT64 con `pacman -Syu`. Sigue siendo el entorno externo de construcción.
+3. Elige **Español** y entra en **Fuentes y dependencias**. Pulsa **Detectar rutas instaladas**; si falta alguna, selecciona una carpeta adicional de búsqueda y revisa los resultados.
+4. Indica los enlaces GitHub, ramas y destinos de xSDK Windows, SDL3 Xenon y glslang. Ya vienen enlaces predeterminados. Usa rutas sin espacios para xSDK, compilador y trabajo.
+5. Pulsa **Preparar todo lo faltante**. Instala paquetes MSYS2 necesarios y construye lo que falte, reutilizando lo existente. El proceso se ve en el panel de comandos. La primera construcción del compilador puede tardar horas. También hay botones separados para cada componente.
+6. Para CoopDX360, en **Rutas y proyecto** indica la raíz del port, tu ROM privada de EE. UU., SDL3 compilado y una carpeta **NUEVA** del juego empaquetado. Usa Release, opciones CMake `[]` y **Construir y empaquetar juego**. Prepara las entradas privadas según la documentación del port.
+7. Con el juego cerrado, copia la carpeta generada a la Xbox. Conserva tus partidas al actualizar. La herramienta no copia ni lanza el juego automáticamente en la consola.
+
+Las preferencias y logs quedan en `data/`. **Actualizar fuentes y reconstruir** es una acción explícita: protege cambios locales y no reconstruye un compilador existente automáticamente. Consulta [la guía de dependencias](README-DEPENDENCIES.md) y [las instrucciones del portable](README-PORTABLE.md).
+
+**El ZIP contiene:** interfaz y runtime, fuentes públicas, licencias, hashes e informes de validación/antivirus. **No contiene:** MSYS2, compilador PowerPC precompilado, ROM, assets privados ni un juego listo para jugar. El panel prepara las herramientas después de instalar MSYS2.
+
 ## Características
 
 - Detecta instalaciones en las rutas guardadas, ubicaciones habituales, `XSDK_TOOLCHAIN` y PATH.
@@ -48,7 +64,7 @@ La interfaz se empaqueta como EXE con Python/Tkinter incluido y permite construi
 | Componente | Para qué sirve | Cuándo se necesita |
 |---|---|---|
 | Windows 10/11 de 64 bits | Sistema host del port | Para usar la interfaz de Windows |
-| Python 3.11 o posterior con tkinter | Ejecuta la interfaz mediante `py`; el lanzador también admite Python UCRT64 en la ruta predeterminada | Siempre para la interfaz |
+| Python 3.11 o posterior con tkinter | Incluido en el EXE; instalación externa solo para ejecutar la interfaz fuente | Solo interfaz fuente |
 | MSYS2 UCRT64 | Entorno de construcción nativo de Windows | Para ejecutar las tareas de construcción |
 | GCC/G++ `powerpc-xsdk-elf`, binutils y newlib de xSDK | Compilan C/C++ para Xbox 360 | Para construir SDK y proyectos |
 | glslang-xenon para Windows | Prepara los shaders | Para proyectos o pruebas que compilan shaders |
@@ -83,7 +99,7 @@ Valores habituales:
 Para proyectos CMake genéricos, elige la carpeta con `CMakeLists.txt`. Para **CoopDX360**, elige la **raíz del repositorio** con `xsdk-project.json`; consulta [la guía de recetas](README-PROJECTS.md).
 Usa **Release**, opciones **`[]`** y **4 trabajos** como punto de partida.
 
-## Instalación desde cero
+## Ejecutar desde el código fuente (opcional)
 
 1. Instala [Python para Windows](https://www.python.org/downloads/windows/) con tkinter y el lanzador `py`.
 2. Instala [MSYS2](https://www.msys2.org/) y actualízalo con `pacman -Syu` desde **UCRT64**.

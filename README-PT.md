@@ -16,6 +16,22 @@ Este fork experimental do [xenosworks/xsdk](https://github.com/xenosworks/xsdk) 
 
 [Baixar ZIP](https://github.com/ZenithUzu/xsdk/archive/refs/heads/main.zip) · [Manual do Windows — espanhol](README-WINDOWS.md) · [Receitas — EN / ES / PT](README-PROJECTS.md) · [README original](README-UPSTREAM.md) · [Estado das compilações](https://github.com/ZenithUzu/xsdk/actions)
 
+## Baixar e começar
+
+**[Baixar xSDK Windows Portable v3 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3/xSDK-Windows-Portable-v3.zip)** · [Release e SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3)
+
+1. Extraia **todo o ZIP** para uma pasta com permissão de escrita. Mantenha `_internal/`, `sdk/` e as licenças ao lado de **xSDK-Windows.exe**. A interface não exige instalar Python separadamente.
+2. Instale [MSYS2](https://www.msys2.org/) se necessário e atualize-o no UCRT64 com `pacman -Syu`. Ele continua como ambiente externo de compilação.
+3. Selecione **Português** e abra **Fontes e dependências**. Use **Detectar caminhos instalados**, indique uma pasta adicional se necessário e revise os resultados.
+4. Configure URLs GitHub, branches e destinos do xSDK Windows, SDL3 Xenon e glslang. Os valores padrão já estão preenchidos. Use caminhos sem espaços para SDK, compilador e trabalho.
+5. Use **Preparar componentes ausentes**. O processo instala pacotes necessários do MSYS2 e compila o que falta, reutilizando o que já existe. A saída aparece no painel de comandos. Construir o compilador pela primeira vez pode levar horas. Há botões individuais para cada componente.
+6. Para CoopDX360, indique a raiz do port, sua ROM privada dos EUA, SDL3 compilado e uma **NOVA** pasta do jogo em **Caminhos e projeto**. Mantenha Release e opções CMake `[]`; use **Compilar e empacotar jogo**. Prepare as entradas privadas conforme a documentação do port.
+7. Copie a pasta gerada para o Xbox com o jogo fechado, preservando seus saves ao atualizar. Não há transferência nem execução automática no console.
+
+Preferências e logs ficam em `data/`. **Atualizar fontes e recompilar** exige uma ação explícita, protege alterações locais e não reconstrói um compilador existente automaticamente. Consulte [o guia de dependências](README-DEPENDENCIES.md) e [as instruções do portátil](README-PORTABLE.md).
+
+**O ZIP inclui:** interface/runtime, fontes públicas, licenças, hashes e relatórios de validação/antivírus. **Não inclui:** MSYS2, compilador PowerPC pronto, ROM, assets privados ou jogo pronto. O painel prepara as ferramentas depois de instalar MSYS2.
+
 ## Recursos
 
 - Detecta e reutiliza ferramentas instaladas, sem reconstruir o compilador a cada projeto.
@@ -40,7 +56,7 @@ A interface pode ser empacotada como EXE com Python/Tkinter e prepara a pasta pr
 | Componente | Finalidade |
 | --- | --- |
 | Windows 10/11 de 64 bits | Sistema do computador |
-| Python 3.11+ com tkinter | Interface; inicializador `py` ou Python UCRT64 no caminho padrão |
+| Python 3.11+ com tkinter | Apenas para a interface fonte; incluído no EXE portátil |
 | MSYS2 UCRT64 | Ambiente e ferramentas de compilação |
 | GCC/G++ PowerPC do xSDK, binutils e newlib | Compilar e vincular código para Xbox 360 |
 | glslang-xenon e bibliotecas compiladas do xSDK | Shaders e runtime |
@@ -48,7 +64,7 @@ A interface pode ser empacotada como EXE com Python/Tkinter e prepara a pasta pr
 
 A receita usa GCC 15.3.0, binutils 2.47 e newlib 4.6.0.20260123 com os patches do xSDK. GCC PowerPC genérico e SDL de desktop não substituem essas ferramentas. Este fluxo não exige Debian/WSL, VS2010 ou Microsoft XDK.
 
-## Instalação
+## Executar pelas fontes (opcional)
 
 ### Já tem as ferramentas?
 
