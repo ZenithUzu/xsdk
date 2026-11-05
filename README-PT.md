@@ -18,7 +18,7 @@ Este fork experimental do [xenosworks/xsdk](https://github.com/xenosworks/xsdk) 
 
 ## Baixar e começar
 
-**[Baixar xSDK Windows Portable v3.3 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3/xSDK-Windows-Portable-v3.3.zip)** · [Release e SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3.3)
+**[Baixar xSDK Windows Portable v3.3.1 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3.1/xSDK-Windows-Portable-v3.3.1.zip)** · [Release e SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3.3.1)
 
 1. Extraia **todo o ZIP** para uma pasta com permissão de escrita. Mantenha `_internal/`, `sdk/` e as licenças ao lado de **xSDK-Windows.exe**. A interface não exige instalar Python separadamente.
 2. Instale [MSYS2](https://www.msys2.org/) se necessário e atualize-o no UCRT64 com `pacman -Syu`. Ele continua como ambiente externo de compilação.
@@ -149,3 +149,7 @@ O hardware precisa de testes separados. A estática na entrada/saída continua p
 - [Licença MIT](LICENSE) e [avisos de terceiros](THIRD_PARTY_NOTICES.md)
 
 **xSDK original:** Mena / xenosworks e colaboradores. Os créditos e avisos originais, incluindo Xenia e libxenon, foram preservados. **Adaptação para Windows:** ZenithUzu, com assistência do OpenAI Codex. GCC, binutils, newlib, glslang e MSYS2 mantêm suas próprias licenças. Este fork não é uma publicação oficial da Microsoft nem da xenosworks.
+
+### Correção do portable v3.3.1
+
+A reparação com cache restaura o PATH do compilador para Newlib e processos make. Corrige `powerpc-xsdk-elf-gcc: command not found` sem apagar o SDK, caches ou projetos. O resultado `PASS` da verificação C/C++23 confirma o funcionamento do compilador, mas não valida a compilação completa do jogo.

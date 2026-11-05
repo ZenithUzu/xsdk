@@ -69,7 +69,7 @@ Las rutas recuperadas deben existir y tener los archivos esperados. Se conservan
 
 El recuadro de información muestra de qué archivo se recuperaron las rutas, los resultados de la detección, el inicio y fin de operaciones y los comandos. Un aviso de actividad cada 15 segundos no es una estimación de porcentaje. Las salidas del compilador se conservan tal como llegan.
 
-La versión portable v3.3 incorpora también estos cambios, además del lanzador CMD.
+La versión portable v3.3.1 incorpora también estos cambios, además del lanzador CMD.
 
 
 ## Actualizar o reinstalar en la ruta existente
@@ -101,3 +101,7 @@ El SDK registra ambas revisiones en `.xsdk-upstream.json`. Si el destino es un c
 **English:** use **Integrate original SDK updates** to combine the original main branch with the configured Windows fork in a private Git worktree, preserve Windows adaptations and apply/build the SDK incrementally in place. Runtime conflicts stop before modifying the installed source. Routine source updates do not need another GUI executable; incompatible upstream changes may still require maintenance.
 
 **Português:** use **Integrar novidades do SDK original** para combinar a branch main do original com o fork Windows numa cópia Git separada, preservar as adaptações e aplicar/compilar o SDK incrementalmente. Conflitos de código interrompem a operação antes de alterar a instalação. Atualizações comuns não exigem outro EXE; mudanças incompatíveis ainda podem precisar de manutenção.
+
+### Reparación del compilador: v3.3.1
+
+Si Newlib mostraba `powerpc-xsdk-elf-gcc: orden no encontrada`, usa v3.3.1 o posterior y selecciona **Actualizar/reinstalar compilador actual**, conservando las rutas. La reparación pasa explícitamente el PATH del compilador a make. No hace falta borrar `C:\xsdk-windows`. Una etapa terminada con `PASS` confirma la prueba del compilador. Los avisos de parches sin registro o de variante glslang no identificada no son errores de compilación: indican que falta verificar su procedencia.

@@ -1,8 +1,8 @@
-# xSDK Windows Portable v3.3 — EXE
+# xSDK Windows Portable v3.3.1 — EXE
 
-[Download ZIP / Descargar ZIP / Baixar ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3/xSDK-Windows-Portable-v3.3.zip) · [Release / SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3.3)
+[Download ZIP / Descargar ZIP / Baixar ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3.1/xSDK-Windows-Portable-v3.3.1.zip) · [Release / SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3.3.1)
 
-> **Incluido en el portable v3.3:** la interfaz fuente muestra inicio, rutas detectadas, salida de comandos, avisos de actividad y finalización en el recuadro de información. Recupera rutas del lanzador BAT/CMD (`%LOCALAPPDATA%/xsdk-windows/settings.json`) y de carpetas portables anteriores. También hay **Recuperar rutas anteriores**. El crédito de Windows es **ZenithUzu**. Estos cambios están incluidos en el EXE de esta versión.
+> **Incluido en el portable v3.3.1:** la interfaz fuente muestra inicio, rutas detectadas, salida de comandos, avisos de actividad y finalización en el recuadro de información. Recupera rutas del lanzador BAT/CMD (`%LOCALAPPDATA%/xsdk-windows/settings.json`) y de carpetas portables anteriores. También hay **Recuperar rutas anteriores**. El crédito de Windows es **ZenithUzu**. Estos cambios están incluidos en el EXE de esta versión.
 
 ## Español
 

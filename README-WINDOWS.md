@@ -1,4 +1,4 @@
-> **Portable v3.3:** [descarga el ZIP del Release](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3/xSDK-Windows-Portable-v3.3.zip) y abre `xSDK-Windows.exe` tras extraerlo completo. No necesitas Python externo para la interfaz. Usa **Fuentes y dependencias** para detectar, descargar y construir herramientas. [Guía del portable](README-PORTABLE.md) · [Guía de enlaces y dependencias](README-DEPENDENCIES.md).
+> **Portable v3.3.1:** [descarga el ZIP del Release](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3.1/xSDK-Windows-Portable-v3.3.1.zip) y abre `xSDK-Windows.exe` tras extraerlo completo. No necesitas Python externo para la interfaz. Usa **Fuentes y dependencias** para detectar, descargar y construir herramientas. [Guía del portable](README-PORTABLE.md) · [Guía de enlaces y dependencias](README-DEPENDENCIES.md).
 
 # Guía de xSDK para Windows
 

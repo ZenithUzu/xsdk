@@ -25,7 +25,7 @@ Se conservan el SDK original, su documentación, ejemplos, licencias y créditos
 
 ## Descargar y empezar
 
-**[Descargar xSDK Windows Portable v3.3 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3/xSDK-Windows-Portable-v3.3.zip)** · [Release y SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3.3)
+**[Descargar xSDK Windows Portable v3.3.1 — ZIP](https://github.com/ZenithUzu/xsdk/releases/download/windows-portable-v3.3.1/xSDK-Windows-Portable-v3.3.1.zip)** · [Release y SHA-256](https://github.com/ZenithUzu/xsdk/releases/tag/windows-portable-v3.3.1)
 
 1. Descomprime **todo el ZIP** en una carpeta con permiso de escritura. Conserva `_internal/`, `sdk/` y las licencias junto a **xSDK-Windows.exe**. Abre ese EXE: la interfaz no necesita que instales Python.
 2. Instala [MSYS2](https://www.msys2.org/) si falta y actualízalo desde UCRT64 con `pacman -Syu`. Sigue siendo el entorno externo de construcción.
@@ -184,3 +184,7 @@ El paquete precompilado es una vía opcional de instalación; no se da por dispo
 proyectos originales. **Adaptación de Windows:** ZenithUzu, con asistencia de OpenAI Codex.
 GCC, binutils, newlib, glslang y MSYS2 conservan sus propias licencias. Este fork no es una publicación oficial
 de xenosworks ni de Microsoft. Los resultados históricos del SDK original no validan automáticamente los cambios del fork.
+
+### Corrección del portable v3.3.1
+
+La reparación con caché restaura la ruta del compilador para Newlib y los procesos de make. Corrige `powerpc-xsdk-elf-gcc: orden no encontrada` sin borrar el SDK, las cachés ni los proyectos. El mensaje `PASS: native tools, powerpc-xsdk-elf C/C++23 compilation and C++ headers` confirma que el compilador pasó su comprobación; todavía no valida el juego completo. `make: se sale del directorio` es normal; los errores se identifican por el código de salida y mensajes como `Error 127`.
